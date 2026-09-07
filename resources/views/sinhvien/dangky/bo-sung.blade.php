@@ -38,10 +38,35 @@
         </div>
     </div>
 @else
+    @php
+        $mapTenTruong = [
+            'ngay_sinh'        => 'Ngày sinh',
+            'gioi_tinh'        => 'Giới tính',
+            'dan_toc'          => 'Dân tộc',
+            'noi_sinh'         => 'Nơi sinh',
+            'so_cccd'          => 'Số CCCD/Định danh',
+            'so_dien_thoai'    => 'Số điện thoại',
+            'tinh_thanh_pho'   => 'Tỉnh/Thành phố',
+            'xa_phuong'        => 'Xã/Phường',
+            'dia_chi_chi_tiet' => 'Địa chỉ chi tiết',
+            'email_lien_he'    => 'Email liên hệ',
+            'anh_ho_so'        => 'Ảnh thẻ 3x4',
+            'anh_cccd_truoc'   => 'Ảnh CCCD mặt trước',
+            'anh_cccd_sau'     => 'Ảnh CCCD mặt sau',
+            'anh_the_sv'       => 'Ảnh thẻ sinh viên',
+        ];
+    @endphp
     <!-- Thông báo yêu cầu bổ sung từ Admin -->
     <div class="alert alert-warning shadow-sm border-warning p-3 mb-4">
-        <h6 class="fw-bold text-dark mb-1">⚠️ Yêu cầu bổ sung thông tin từ Admin / Phòng Khảo thí</h6>
-        <p class="mb-1"><strong>Lý do / Ghi chú:</strong> {{ $dangky->ly_do_bo_sung }}</p>
+        <h6 class="fw-bold text-dark mb-2">⚠️ Yêu cầu bổ sung thông tin từ Admin / Phòng Khảo thí</h6>
+        <p class="mb-2" style="white-space: pre-line;"><strong>Lý do / Ghi chú:</strong> {{ $dangky->ly_do_bo_sung }}</p>
+        <p class="mb-2"><strong>Các trường cần sửa:</strong> 
+            @if(is_array($dangky->truong_can_bo_sung))
+                @foreach($dangky->truong_can_bo_sung as $tKey)
+                    <span class="badge bg-primary me-1 fw-medium px-2 py-1">{{ $mapTenTruong[$tKey] ?? $tKey }}</span>
+                @endforeach
+            @endif
+        </p>
         <p class="mb-0"><strong>Hạn bổ sung trực tuyến:</strong> <span class="badge bg-danger ms-1">{{ optional($dangky->han_bo_sung)->format('d/m/Y H:i') }}</span></p>
     </div>
 @endif

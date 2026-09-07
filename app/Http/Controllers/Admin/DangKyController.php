@@ -151,7 +151,6 @@ class DangKyController extends Controller
         $messages = [
             'truong_can_bo_sung.required' => 'Vui lòng chọn ít nhất một trường cần bổ sung.',
             'truong_can_bo_sung.min' => 'Vui lòng chọn ít nhất một trường cần bổ sung.',
-            'ly_do_bo_sung.required' => 'Vui lòng nhập lý do xử lý hồ sơ.',
             'han_bo_sung.required' => 'Vui lòng chọn thời hạn bổ sung.',
             'han_bo_sung.after' => 'Thời hạn bổ sung không hợp lệ (thời hạn phải sau thời điểm hiện tại).',
             'han_bo_sung.before_or_equal' => 'Thời hạn bổ sung không hợp lệ (không được vượt quá ngày thi ' . $lichthi->ngay_thi->format('d/m/Y') . ').',
@@ -159,7 +158,9 @@ class DangKyController extends Controller
 
         $data = $request->validate([
             'truong_can_bo_sung' => ['required', 'array', 'min:1'],
-            'ly_do_bo_sung' => ['required', 'string'],
+            'truong_can_bo_sung.*' => ['string'],
+            'ly_do_tung_truong' => ['nullable', 'array'],
+            'ly_do_tung_truong.*' => ['nullable', 'string', 'max:500'],
             'han_bo_sung' => [
                 'required',
                 'date',
@@ -167,15 +168,6 @@ class DangKyController extends Controller
                 'before_or_equal:' . $lichthi->ngay_thi->copy()->endOfDay()->toDateTimeString(),
             ],
         ], $messages);
-
-        $trangThaiTruoc = $dangky->trang_thai;
-        $dangky->update([
-            'trang_thai' => 'cho_bo_sung',
-            'truong_can_bo_sung' => $data['truong_can_bo_sung'],
-            'ly_do_bo_sung' => $data['ly_do_bo_sung'],
-            'han_bo_sung' => $data['han_bo_sung'],
-            'nguoi_duyet_id' => Auth::id(),
-        ]);
 
         $tenTruongMap = [
             'so_dien_thoai' => 'Số điện thoại',
@@ -186,13 +178,42 @@ class DangKyController extends Controller
             'so_cccd' => 'Số CCCD',
             'anh_cccd_truoc' => 'Ảnh CCCD mặt trước',
             'anh_cccd_sau' => 'Ảnh CCCD mặt sau',
-            'anh_ho_so' => 'Ảnh hồ sơ dự thi 4x6',
+            'anh_ho_so' => 'Ảnh hồ sơ dự thi 3x4',
             'anh_the_sv' => 'Ảnh thẻ sinh viên',
+            'tinh_thanh_pho' => 'Tỉnh/Thành phố',
+            'xa_phuong' => 'Xã/Phường',
+            'dia_chi_chi_tiet' => 'Địa chỉ chi tiết',
+            'email_lien_he' => 'Email liên hệ',
         ];
 
-        $dsTenTruong = array_map(fn($k) => $tenTruongMap[$k] ?? $k, $data['truong_can_bo_sung']);
+        // Kiểm tra lý do từng trường đã chọn là bắt buộc
+        $lyDoTungTruong = [];
+        $doanhSachLyDo = [];
+        foreach ($data['truong_can_bo_sung'] as $key) {
+            $lyDo = trim($data['ly_do_tung_truong'][$key] ?? '');
+            $tenTruong = $tenTruongMap[$key] ?? $key;
+            if (empty($lyDo)) {
+                return back()->withErrors(['truong_can_bo_sung' => "Vui lòng nhập lý do yêu cầu bổ sung cho trường '{$tenTruong}'."])->withInput();
+            }
+            $lyDoTungTruong[$key] = $lyDo;
+            $doanhSachLyDo[] = "- {$tenTruong}: {$lyDo}";
+        }
+
+        // Tổng hợp ly_do_bo_sung gửi email và lưu lịch sử
+        $lyDoBoSungTongHop = "Yêu cầu sinh viên bổ sung/chỉnh sửa các thông tin sau:\n" . implode("\n", $doanhSachLyDo);
+
+        $trangThaiTruoc = $dangky->trang_thai;
+        $dangky->update([
+            'trang_thai' => 'cho_bo_sung',
+            'truong_can_bo_sung' => $data['truong_can_bo_sung'],
+            'ly_do_tung_truong' => $lyDoTungTruong,
+            'ly_do_bo_sung' => $lyDoBoSungTongHop,
+            'han_bo_sung' => $data['han_bo_sung'],
+            'nguoi_duyet_id' => Auth::id(),
+        ]);
 
         // Ghi nhật ký xử lý hồ sơ
+        $dsTenTruong = array_map(fn($k) => $tenTruongMap[$k] ?? $k, $data['truong_can_bo_sung']);
         LichSuXuLyHoSo::create([
             'dang_ky_id' => $dangky->id,
             'user_id' => Auth::id(),
@@ -200,7 +221,7 @@ class DangKyController extends Controller
             'hanh_dong' => 'yeu_cau_bo_sung',
             'trang_thai_truoc' => $trangThaiTruoc,
             'trang_thai_sau' => 'cho_bo_sung',
-            'noi_dung' => 'Yêu cầu bổ sung các trường: ' . implode(', ', $dsTenTruong) . '. Lý do: ' . $data['ly_do_bo_sung'] . '. Hạn bổ sung trực tuyến: ' . date('d/m/Y H:i', strtotime($data['han_bo_sung'])),
+            'noi_dung' => 'Yêu cầu bổ sung các trường: ' . implode(', ', $dsTenTruong) . '. Hạn bổ sung trực tuyến: ' . date('d/m/Y H:i', strtotime($data['han_bo_sung'])),
         ]);
 
         // Gửi email thông báo cho sinh viên

@@ -134,7 +134,7 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Chi tiết hồ sơ đăng ký: {{ $dk->ma_dang_ky }} — {{ $dk->sinhVien->name }}</h5>
+                    <h5 class="modal-title">Chi tiết hồ sơ đăng ký — {{ $dk->sinhVien->name }}</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -166,13 +166,31 @@
                     @endif
 
                     @if ($dk->trang_thai === 'cho_bo_sung')
-                        <div class="alert alert-warning">
+                        @php
+                            $mapTenTruong = [
+                                'ngay_sinh'        => 'Ngày sinh',
+                                'gioi_tinh'        => 'Giới tính',
+                                'dan_toc'          => 'Dân tộc',
+                                'noi_sinh'         => 'Nơi sinh',
+                                'so_cccd'          => 'Số CCCD/Định danh',
+                                'so_dien_thoai'    => 'Số điện thoại',
+                                'tinh_thanh_pho'   => 'Tỉnh/Thành phố',
+                                'xa_phuong'        => 'Xã/Phường',
+                                'dia_chi_chi_tiet' => 'Địa chỉ chi tiết',
+                                'email_lien_he'    => 'Email liên hệ',
+                                'anh_ho_so'        => 'Ảnh thẻ 3x4',
+                                'anh_cccd_truoc'   => 'Ảnh CCCD mặt trước',
+                                'anh_cccd_sau'     => 'Ảnh CCCD mặt sau',
+                                'anh_the_sv'       => 'Ảnh thẻ sinh viên',
+                            ];
+                        @endphp
+                        <div class="alert alert-warning shadow-sm">
                             <h6 class="fw-bold mb-1">⚠️ Nội dung Admin đã yêu cầu bổ sung:</h6>
-                            <p class="mb-1"><strong>Lý do:</strong> {{ $dk->ly_do_bo_sung }}</p>
+                            <p class="mb-1" style="white-space: pre-line;"><strong>Lý do:</strong> {{ $dk->ly_do_bo_sung }}</p>
                             <p class="mb-1"><strong>Các trường cần sửa:</strong> 
                                 @if(is_array($dk->truong_can_bo_sung))
                                     @foreach($dk->truong_can_bo_sung as $tKey)
-                                        <span class="badge bg-dark">{{ $tKey }}</span>
+                                        <span class="badge bg-primary me-1 fw-medium px-2 py-1">{{ $mapTenTruong[$tKey] ?? $tKey }}</span>
                                     @endforeach
                                 @endif
                             </p>
@@ -357,49 +375,145 @@
     <!-- 3. MODAL YÊU CẦU BỔ SUNG -->
     <div class="modal fade" id="boSung{{ $dk->id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
-            <form method="POST" action="{{ route('admin.dangky.bosung', [$lichthi, $dk]) }}" class="modal-content">
+            <form method="POST" action="{{ route('admin.dangky.bosung', [$lichthi, $dk]) }}" class="modal-content" novalidate onsubmit="return validateBoSungForm_{{ $dk->id }}(event)">
                 @csrf
                 <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title">Yêu cầu bổ sung hồ sơ: {{ $dk->ma_dang_ky }}</h5>
+                    <h5 class="modal-title">Yêu cầu bổ sung hồ sơ</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
+                    <div id="boSungAlert_{{ $dk->id }}" class="alert alert-danger py-2 mb-3 small fw-medium" style="display:none">
+                        Vui lòng nhập đầy đủ lý do bổ sung cho tất cả các trường được chọn.
+                    </div>
+
                     <label class="form-label fw-bold text-primary">1. Danh sách các trường được phép chỉnh sửa:</label>
                     <p class="text-muted small">Tích chọn các trường cần sinh viên bổ sung hoặc sửa đổi. Hệ thống chỉ mở khóa duy nhất các trường này.</p>
-                    
-                    <div class="row g-2 mb-3 bg-light p-3 rounded border">
-                        @php
-                            $cacTruong = [
-                                'so_dien_thoai' => 'Số điện thoại liên hệ',
-                                'ngay_sinh' => 'Ngày sinh',
-                                'gioi_tinh' => 'Giới tính',
-                                'dan_toc' => 'Dân tộc',
-                                'noi_sinh' => 'Nơi sinh',
-                                'so_cccd' => 'Số CCCD/Định danh',
-                                'anh_cccd_truoc' => 'Ảnh CCCD mặt trước',
-                                'anh_cccd_sau' => 'Ảnh CCCD mặt sau',
-                                'anh_ho_so' => 'Ảnh hồ sơ dự thi 4x6',
-                                'anh_the_sv' => 'Ảnh thẻ sinh viên',
-                            ];
-                            $selectedFields = is_array($dk->truong_can_bo_sung) ? $dk->truong_can_bo_sung : [];
-                        @endphp
-                        @foreach ($cacTruong as $key => $nhan)
-                            <div class="col-md-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="truong_can_bo_sung[]" value="{{ $key }}" id="ts_{{ $dk->id }}_{{ $key }}" {{ in_array($key, $selectedFields) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="ts_{{ $dk->id }}_{{ $key }}">{{ $nhan }}</label>
-                                </div>
+                    @php
+                        $cacTruong = [
+                            // --- Thông tin cá nhân ---
+                            'ngay_sinh'        => ['nhan' => 'Ngày sinh',              'nhom' => 'Thông tin cá nhân'],
+                            'gioi_tinh'        => ['nhan' => 'Giới tính',              'nhom' => 'Thông tin cá nhân'],
+                            'dan_toc'          => ['nhan' => 'Dân tộc',                'nhom' => 'Thông tin cá nhân'],
+                            'noi_sinh'         => ['nhan' => 'Nơi sinh',               'nhom' => 'Thông tin cá nhân'],
+                            'so_cccd'          => ['nhan' => 'Số CCCD/Định danh',      'nhom' => 'Thông tin cá nhân'],
+                            // --- Thông tin liên hệ ---
+                            'so_dien_thoai'    => ['nhan' => 'Số điện thoại liên hệ', 'nhom' => 'Thông tin liên hệ'],
+                            'tinh_thanh_pho'   => ['nhan' => 'Tỉnh/Thành phố',        'nhom' => 'Thông tin liên hệ'],
+                            'xa_phuong'        => ['nhan' => 'Xã/Phường',             'nhom' => 'Thông tin liên hệ'],
+                            'dia_chi_chi_tiet' => ['nhan' => 'Địa chỉ chi tiết',      'nhom' => 'Thông tin liên hệ'],
+                            'email_lien_he'    => ['nhan' => 'Email liên hệ',         'nhom' => 'Thông tin liên hệ'],
+                            // --- Hồ sơ ảnh ---
+                            'anh_ho_so'        => ['nhan' => 'Ảnh thẻ 3x4',           'nhom' => 'Ảnh hồ sơ dự thi'],
+                            'anh_cccd_truoc'   => ['nhan' => 'Ảnh CCCD mặt trước',    'nhom' => 'Ảnh hồ sơ dự thi'],
+                            'anh_cccd_sau'     => ['nhan' => 'Ảnh CCCD mặt sau',      'nhom' => 'Ảnh hồ sơ dự thi'],
+                            'anh_the_sv'       => ['nhan' => 'Ảnh thẻ sinh viên',     'nhom' => 'Ảnh hồ sơ dự thi'],
+                        ];
+                        $selFields   = is_array($dk->truong_can_bo_sung) ? $dk->truong_can_bo_sung : [];
+                        $savedReason = is_array($dk->ly_do_tung_truong)  ? $dk->ly_do_tung_truong  : [];
+                        $nhomList    = array_unique(array_column($cacTruong, 'nhom'));
+                    @endphp
+
+                    <div>
+                        @foreach($nhomList as $nhom)
+                            <p class="fw-semibold text-primary mb-1 mt-3 small text-uppercase" style="letter-spacing:.05em">{{ $nhom }}</p>
+                            <div class="bg-light rounded border p-2 mb-2">
+                                @foreach($cacTruong as $key => $info)
+                                    @if($info['nhom'] === $nhom)
+                                        @php $isChecked = in_array($key, $selFields); @endphp
+                                        <div class="mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       name="truong_can_bo_sung[]"
+                                                       value="{{ $key }}"
+                                                       id="ts_{{ $dk->id }}_{{ $key }}"
+                                                       onchange="
+                                                            var box = document.getElementById('ly_do_box_{{ $dk->id }}_{{ $key }}');
+                                                            if (this.checked) {
+                                                                box.style.display = 'block';
+                                                            } else {
+                                                                box.style.display = 'none';
+                                                                var txt = document.getElementById('ly_do_txt_{{ $dk->id }}_{{ $key }}');
+                                                                if(txt) {
+                                                                    txt.classList.remove('is-invalid');
+                                                                    var err = document.getElementById('err_msg_{{ $dk->id }}_{{ $key }}');
+                                                                    if(err) err.style.display = 'none';
+                                                                }
+                                                            }
+                                                       "
+                                                       {{ $isChecked ? 'checked' : '' }}>
+                                                <label class="form-check-label fw-medium" for="ts_{{ $dk->id }}_{{ $key }}">
+                                                    {{ $info['nhan'] }}
+                                                </label>
+                                            </div>
+                                            <div id="ly_do_box_{{ $dk->id }}_{{ $key }}"
+                                                 class="mt-1 ps-4"
+                                                 style="display: {{ $isChecked ? 'block' : 'none' }}">
+                                                <label class="form-label mb-1 text-danger small fw-semibold">Lý do yêu cầu bổ sung <span class="text-danger">*</span></label>
+                                                <textarea id="ly_do_txt_{{ $dk->id }}_{{ $key }}"
+                                                          name="ly_do_tung_truong[{{ $key }}]"
+                                                          class="form-control form-control-sm"
+                                                          rows="2"
+                                                          placeholder="Lý do bổ sung trường này (bắt buộc)..."
+                                                          oninput="this.classList.remove('is-invalid'); var e = document.getElementById('err_msg_{{ $dk->id }}_{{ $key }}'); if(e) e.style.display='none';">{{ $savedReason[$key] ?? '' }}</textarea>
+                                                <div id="err_msg_{{ $dk->id }}_{{ $key }}" class="text-danger small mt-1 fw-medium" style="display:none">
+                                                    &bull; Vui lòng nhập lý do bổ sung cho trường này.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
                             </div>
                         @endforeach
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-primary">2. Lý do / Nội dung cần bổ sung <span class="text-danger">*</span></label>
-                        <textarea name="ly_do_bo_sung" class="form-control" rows="3" placeholder="Nhập chi tiết lý do và hướng dẫn sinh viên bổ sung..." required>{{ $dk->ly_do_bo_sung }}</textarea>
-                    </div>
+                    <script>
+                    function validateBoSungForm_{{ $dk->id }}(e) {
+                        var form = e.target;
+                        var checkboxes = form.querySelectorAll('input[name="truong_can_bo_sung[]"]:checked');
+                        var alertBox = document.getElementById('boSungAlert_{{ $dk->id }}');
+                        
+                        alertBox.style.display = 'none';
+                        var isValid = true;
+                        var firstErrorInput = null;
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold text-primary">3. Thời hạn bổ sung trực tuyến <span class="text-danger">*</span></label>
+                        if (checkboxes.length === 0) {
+                            alertBox.innerText = 'Vui lòng chọn ít nhất một trường cần bổ sung.';
+                            alertBox.style.display = 'block';
+                            e.preventDefault();
+                            return false;
+                        }
+
+                        checkboxes.forEach(function(cb) {
+                            var key = cb.value;
+                            var txt = document.getElementById('ly_do_txt_{{ $dk->id }}_' + key);
+                            var errMsg = document.getElementById('err_msg_{{ $dk->id }}_' + key);
+                            if (txt) {
+                                if (!txt.value.trim()) {
+                                    isValid = false;
+                                    txt.classList.add('is-invalid');
+                                    if (errMsg) errMsg.style.display = 'block';
+                                    if (!firstErrorInput) firstErrorInput = txt;
+                                } else {
+                                    txt.classList.remove('is-invalid');
+                                    if (errMsg) errMsg.style.display = 'none';
+                                }
+                            }
+                        });
+
+                        if (!isValid) {
+                            alertBox.innerText = 'Vui lòng nhập đầy đủ lý do bổ sung cho các trường được tích chọn.';
+                            alertBox.style.display = 'block';
+                            if (firstErrorInput) firstErrorInput.focus();
+                            e.preventDefault();
+                            return false;
+                        }
+                        return true;
+                    }
+                    </script>
+
+                    <div class="mb-3 mt-3">
+                        <label class="form-label fw-bold text-primary">2. Thời hạn bổ sung trực tuyến <span class="text-danger">*</span></label>
                         <input type="datetime-local" name="han_bo_sung" class="form-control" value="{{ $dk->han_bo_sung ? $dk->han_bo_sung->format('Y-m-d\TH:i') : now()->addDays(2)->format('Y-m-d\TH:i') }}" required>
                         <small class="text-muted">Hệ thống sẽ tự động khóa tính năng bổ sung trực tuyến khi hết thời hạn trên.</small>
                     </div>

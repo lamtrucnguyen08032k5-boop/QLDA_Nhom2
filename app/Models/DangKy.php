@@ -16,7 +16,7 @@ class DangKy extends Model
         'tinh_thanh_pho_code', 'tinh_thanh_pho_ten', 'xa_phuong_code', 'xa_phuong_ten',
         'dia_chi_chi_tiet', 'email_lien_he',
         'so_cccd', 'anh_cccd_truoc', 'anh_cccd_sau', 'anh_ho_so', 'anh_the_sv',
-        'truong_can_bo_sung', 'ly_do_bo_sung', 'han_bo_sung', 'ngay_bo_sung',
+        'truong_can_bo_sung', 'ly_do_bo_sung', 'ly_do_tung_truong', 'han_bo_sung', 'ngay_bo_sung', 'han_thanh_toan',
         'phuong_thuc_thanh_toan', 'trang_thai_thanh_toan', 'ma_giao_dich', 'so_tien', 'ngay_thanh_toan', 'ngay_nhac_thanh_toan',
     ];
 
@@ -27,9 +27,11 @@ class DangKy extends Model
             'ngay_sinh' => 'date',
             'han_bo_sung' => 'datetime',
             'ngay_bo_sung' => 'datetime',
+            'han_thanh_toan' => 'datetime',
             'ngay_thanh_toan' => 'datetime',
             'ngay_nhac_thanh_toan' => 'datetime',
             'truong_can_bo_sung' => 'array',
+            'ly_do_tung_truong' => 'array',
         ];
     }
 
@@ -38,6 +40,14 @@ class DangKy extends Model
         static::creating(function (DangKy $dangKy) {
             if (empty($dangKy->ma_dang_ky)) {
                 $dangKy->ma_dang_ky = 'DK' . now()->format('ymd') . strtoupper(Str::random(5));
+            }
+            if (empty($dangKy->han_thanh_toan)) {
+                $han2Ngay = now()->addDays(2);
+                if ($dangKy->lichThi && $dangKy->lichThi->han_dang_ky && $dangKy->lichThi->han_dang_ky->lt($han2Ngay)) {
+                    $dangKy->han_thanh_toan = $dangKy->lichThi->han_dang_ky;
+                } else {
+                    $dangKy->han_thanh_toan = $han2Ngay;
+                }
             }
         });
     }
@@ -95,6 +105,10 @@ class DangKy extends Model
      */
     public function hanThanhToan(): \Carbon\Carbon
     {
+        if ($this->han_thanh_toan) {
+            return $this->han_thanh_toan;
+        }
+
         $han2Ngay = $this->created_at ? $this->created_at->copy()->addDays(2) : now()->addDays(2);
         if ($this->lichThi && $this->lichThi->han_dang_ky && $this->lichThi->han_dang_ky->lt($han2Ngay)) {
             return $this->lichThi->han_dang_ky;

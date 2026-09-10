@@ -35,6 +35,7 @@ class LichSuXuLyHoSo extends Model
             'duyet' => 'Duyệt hồ sơ',
             'yeu_cau_bo_sung' => 'Yêu cầu bổ sung',
             'bo_sung_ho_so' => 'Bổ sung thông tin',
+            'bo_sung_ho_so_qua_han' => 'Admin hỗ trợ bổ sung quá hạn',
             'tu_choi' => 'Từ chối hồ sơ',
             'huy' => 'Hủy hồ sơ',
             default => $this->hanh_dong,

@@ -43,6 +43,7 @@
                     <option value="cho_thanh_toan" {{ request('trang_thai') === 'cho_thanh_toan' ? 'selected' : '' }}>Chờ thanh toán</option>
                     <option value="cho_duyet" {{ request('trang_thai') === 'cho_duyet' ? 'selected' : '' }}>Chờ duyệt</option>
                     <option value="cho_bo_sung" {{ request('trang_thai') === 'cho_bo_sung' ? 'selected' : '' }}>Yêu cầu bổ sung</option>
+                    <option value="het_han_bo_sung" {{ request('trang_thai') === 'het_han_bo_sung' ? 'selected' : '' }}>Hết hạn bổ sung</option>
                     <option value="da_bo_sung" {{ request('trang_thai') === 'da_bo_sung' ? 'selected' : '' }}>Đã bổ sung/Chờ duyệt lại</option>
                     <option value="da_duyet" {{ request('trang_thai') === 'da_duyet' ? 'selected' : '' }}>Đã duyệt</option>
                     <option value="tu_choi" {{ request('trang_thai') === 'tu_choi' ? 'selected' : '' }}>Từ chối</option>
@@ -90,6 +91,8 @@
                         <td class="text-center">
                             @if ($dk->trang_thai_thanh_toan === 'cho_thanh_toan' && $dk->trang_thai !== 'da_huy')
                                 <span class="badge bg-warning text-dark">Chờ thanh toán</span>
+                            @elseif ($dk->isChoBoSungQuaHan())
+                                <span class="badge bg-danger">Hết hạn bổ sung</span>
                             @elseif ($dk->trang_thai === 'cho_duyet')
                                 <span class="badge bg-warning text-dark">Chờ duyệt</span>
                             @elseif ($dk->trang_thai === 'cho_bo_sung')
@@ -184,18 +187,33 @@
                                 'anh_the_sv'       => 'Ảnh thẻ sinh viên',
                             ];
                         @endphp
-                        <div class="alert alert-warning shadow-sm">
-                            <h6 class="fw-bold mb-1">⚠️ Nội dung Admin đã yêu cầu bổ sung:</h6>
-                            <p class="mb-1" style="white-space: pre-line;"><strong>Lý do:</strong> {{ $dk->ly_do_bo_sung }}</p>
-                            <p class="mb-1"><strong>Các trường cần sửa:</strong> 
-                                @if(is_array($dk->truong_can_bo_sung))
-                                    @foreach($dk->truong_can_bo_sung as $tKey)
-                                        <span class="badge bg-primary me-1 fw-medium px-2 py-1">{{ $mapTenTruong[$tKey] ?? $tKey }}</span>
-                                    @endforeach
-                                @endif
-                            </p>
-                            <p class="mb-0"><strong>Hạn bổ sung trực tuyến:</strong> {{ optional($dk->han_bo_sung)->format('d/m/Y H:i') }}</p>
-                        </div>
+                        @if ($dk->isHetHanBoSungOnline())
+                            <div class="alert alert-danger shadow-sm border-danger">
+                                <h6 class="fw-bold mb-1">⏰ Hồ sơ đã HẾT THỜI HẠN bổ sung trực tuyến:</h6>
+                                <p class="mb-1">Hồ sơ đã quá thời hạn bổ sung (Thời hạn: <strong>{{ optional($dk->han_bo_sung)->format('d/m/Y H:i') }}</strong>). Sinh viên không thể tự bổ sung online và phải đến trực tiếp Phòng Khảo thí để được cán bộ hỗ trợ.</p>
+                                <p class="mb-1" style="white-space: pre-line;"><strong>Nội dung từng yêu cầu bổ sung:</strong> {{ $dk->ly_do_bo_sung }}</p>
+                                <p class="mb-0"><strong>Các trường đã yêu cầu:</strong> 
+                                    @if(is_array($dk->truong_can_bo_sung))
+                                        @foreach($dk->truong_can_bo_sung as $tKey)
+                                            <span class="badge bg-danger me-1 fw-medium px-2 py-1">{{ $mapTenTruong[$tKey] ?? $tKey }}</span>
+                                        @endforeach
+                                    @endif
+                                </p>
+                            </div>
+                        @else
+                            <div class="alert alert-warning shadow-sm">
+                                <h6 class="fw-bold mb-1">⚠️ Nội dung Admin đã yêu cầu bổ sung:</h6>
+                                <p class="mb-1" style="white-space: pre-line;"><strong>Lý do:</strong> {{ $dk->ly_do_bo_sung }}</p>
+                                <p class="mb-1"><strong>Các trường cần sửa:</strong> 
+                                    @if(is_array($dk->truong_can_bo_sung))
+                                        @foreach($dk->truong_can_bo_sung as $tKey)
+                                            <span class="badge bg-primary me-1 fw-medium px-2 py-1">{{ $mapTenTruong[$tKey] ?? $tKey }}</span>
+                                        @endforeach
+                                    @endif
+                                </p>
+                                <p class="mb-0"><strong>Hạn bổ sung trực tuyến:</strong> {{ optional($dk->han_bo_sung)->format('d/m/Y H:i') }}</p>
+                            </div>
+                        @endif
                     @endif
 
                     <div class="row g-4">
@@ -340,7 +358,11 @@
                                 <button class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#boSung{{ $dk->id }}">⚠️ Yêu cầu bổ sung</button>
                                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#tuChoi{{ $dk->id }}">❌ Từ chối</button>
                             @elseif ($dk->trang_thai === 'cho_bo_sung')
-                                <button class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#boSung{{ $dk->id }}">✏️ Sửa yêu cầu bổ sung</button>
+                                @if ($dk->isHetHanBoSungOnline())
+                                    <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#hoTroBoSung{{ $dk->id }}">🛠️ Hỗ trợ bổ sung hồ sơ</button>
+                                @else
+                                    <button class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#boSung{{ $dk->id }}">✏️ Sửa yêu cầu bổ sung</button>
+                                @endif
                                 <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#tuChoi{{ $dk->id }}">❌ Từ chối</button>
                             @endif
                         @endif
@@ -549,6 +571,155 @@
             </form>
         </div>
     </div>
+
+    <!-- 5. MODAL HỖ TRỢ BỔ SUNG HỒ SƠ QUÁ HẠN -->
+    <div class="modal fade" id="hoTroBoSung{{ $dk->id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <form method="POST" action="{{ route('admin.dangky.hotrobosung', [$lichthi, $dk]) }}" enctype="multipart/form-data" class="modal-content" novalidate onsubmit="return confirmHoTroBoSung_{{ $dk->id }}(event)">
+                @csrf
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">🛠️ Hỗ trợ bổ sung hồ sơ quá hạn — {{ $dk->sinhVien->name }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-info py-2 mb-3 small">
+                        <strong>📌 Lưu ý cán bộ:</strong> Hồ sơ đã hết thời hạn tự bổ sung trực tuyến. Cán bộ Phòng Khảo thí thực hiện cập nhật thông tin/giấy tờ thay cho sinh viên dựa trên hồ sơ minh chứng nộp trực tiếp.
+                    </div>
+
+                    @if ($dk->ly_do_bo_sung)
+                        <div class="alert alert-warning py-2 mb-3 small">
+                            <strong class="d-block mb-1">⚠️ Nội dung Admin đã từng yêu cầu bổ sung trước đây:</strong>
+                            <div style="white-space: pre-line;">{{ $dk->ly_do_bo_sung }}</div>
+                        </div>
+                    @endif
+
+                    <div id="hoTroBoSungAlert_{{ $dk->id }}" class="alert alert-danger py-2 mb-3 small fw-medium" style="display:none">
+                        Vui lòng nhập lý do bổ sung sau thời hạn.
+                    </div>
+
+                    <!-- THÔNG TIN CÁ NHÂN & LIÊN HỆ -->
+                    <h6 class="fw-bold text-primary mb-3">1. Thông tin cá nhân & Liên hệ</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Số điện thoại liên hệ</label>
+                            <input type="text" name="so_dien_thoai" class="form-control form-control-sm" value="{{ old('so_dien_thoai', $dk->so_dien_thoai) }}" placeholder="10 chữ số">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Ngày sinh</label>
+                            <input type="date" name="ngay_sinh" class="form-control form-control-sm" value="{{ old('ngay_sinh', optional($dk->ngay_sinh)->format('Y-m-d')) }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Giới tính</label>
+                            <select name="gioi_tinh" class="form-select form-select-sm">
+                                <option value="nam" {{ old('gioi_tinh', $dk->gioi_tinh) === 'nam' ? 'selected' : '' }}>Nam</option>
+                                <option value="nu" {{ old('gioi_tinh', $dk->gioi_tinh) === 'nu' ? 'selected' : '' }}>Nữ</option>
+                                <option value="khac" {{ old('gioi_tinh', $dk->gioi_tinh) === 'khac' ? 'selected' : '' }}>Khác</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Dân tộc</label>
+                            <input type="text" name="dan_toc" class="form-control form-control-sm" value="{{ old('dan_toc', $dk->dan_toc) }}" placeholder="Kinh, Tày, Nùng...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Nơi sinh</label>
+                            <input type="text" name="noi_sinh" class="form-control form-control-sm" value="{{ old('noi_sinh', $dk->noi_sinh) }}" placeholder="Tỉnh/Thành phố nơi sinh">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Số CCCD / Định danh</label>
+                            <input type="text" name="so_cccd" class="form-control form-control-sm" value="{{ old('so_cccd', $dk->so_cccd) }}" placeholder="12 chữ số">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Email liên hệ</label>
+                            <input type="email" name="email_lien_he" class="form-control form-control-sm" value="{{ old('email_lien_he', $dk->email_lien_he) }}" placeholder="Email nhận thông báo">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Địa chỉ chi tiết (Số nhà, đường...)</label>
+                            <input type="text" name="dia_chi_chi_tiet" class="form-control form-control-sm" value="{{ old('dia_chi_chi_tiet', $dk->dia_chi_chi_tiet) }}" placeholder="Số nhà, tên đường">
+                        </div>
+                    </div>
+
+                    <!-- HÌNH ẢNH / GIẤY TỜ MINH CHỨNG -->
+                    <h6 class="fw-bold text-primary mb-3">2. Tải lên / Thay thế tệp & hình ảnh minh chứng</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Ảnh CCCD Mặt trước</label>
+                            @if ($dk->anh_cccd_truoc)
+                                <div class="mb-1"><a href="{{ Storage::url($dk->anh_cccd_truoc) }}" target="_blank" class="small text-decoration-none fw-medium">🔍 Xem ảnh hiện tại</a></div>
+                            @endif
+                            <input type="file" name="anh_cccd_truoc" class="form-control form-control-sm" accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Ảnh CCCD Mặt sau</label>
+                            @if ($dk->anh_cccd_sau)
+                                <div class="mb-1"><a href="{{ Storage::url($dk->anh_cccd_sau) }}" target="_blank" class="small text-decoration-none fw-medium">🔍 Xem ảnh hiện tại</a></div>
+                            @endif
+                            <input type="file" name="anh_cccd_sau" class="form-control form-control-sm" accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Ảnh Hồ sơ 3x4</label>
+                            @if ($dk->anh_ho_so)
+                                <div class="mb-1"><a href="{{ Storage::url($dk->anh_ho_so) }}" target="_blank" class="small text-decoration-none fw-medium">🔍 Xem ảnh hiện tại</a></div>
+                            @endif
+                            <input type="file" name="anh_ho_so" class="form-control form-control-sm" accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Ảnh Thẻ Sinh viên</label>
+                            @if ($dk->anh_the_sv)
+                                <div class="mb-1"><a href="{{ Storage::url($dk->anh_the_sv) }}" target="_blank" class="small text-decoration-none fw-medium">🔍 Xem ảnh hiện tại</a></div>
+                            @endif
+                            <input type="file" name="anh_the_sv" class="form-control form-control-sm" accept="image/*">
+                        </div>
+                    </div>
+
+                    <!-- THÔNG TIN BẮT BỘC & GHI CHÚ -->
+                    <h6 class="fw-bold text-primary mb-3">3. Lý do bổ sung & Ghi chú cán bộ</h6>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Lý do bổ sung sau thời hạn <span class="text-danger">*</span></label>
+                        <textarea id="ly_do_bo_sung_qua_han_{{ $dk->id }}" name="ly_do_bo_sung_qua_han" class="form-control" rows="2" placeholder="Nhập lý do bổ sung sau thời hạn (bắt buộc)..." required oninput="this.classList.remove('is-invalid'); var a = document.getElementById('hoTroBoSungAlert_{{ $dk->id }}'); if(a) a.style.display='none';"></textarea>
+                        <small class="text-muted">Lý do này bắt buộc phải nhập để lưu lịch sử thao tác.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ghi chú của cán bộ <span class="text-muted fw-normal">(không bắt buộc)</span></label>
+                        <textarea name="ghi_chu_can_bo" class="form-control" rows="2" placeholder="Nhập ghi chú xử lý bổ sung nếu có..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Xác nhận Bổ sung</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function confirmHoTroBoSung_{{ $dk->id }}(e) {
+        var txtReason = document.getElementById('ly_do_bo_sung_qua_han_{{ $dk->id }}');
+        var alertBox = document.getElementById('hoTroBoSungAlert_{{ $dk->id }}');
+
+        if (!txtReason || !txtReason.value.trim()) {
+            if (alertBox) {
+                alertBox.innerText = 'Vui lòng nhập lý do bổ sung sau thời hạn.';
+                alertBox.style.display = 'block';
+            }
+            if (txtReason) {
+                txtReason.classList.add('is-invalid');
+                txtReason.focus();
+            }
+            e.preventDefault();
+            return false;
+        }
+
+        if (alertBox) alertBox.style.display = 'none';
+
+        var ok = confirm('Bạn có chắc chắn muốn bổ sung hồ sơ thay cho sinh viên này không?');
+        if (!ok) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    }
+    </script>
 
 @endforeach
 

@@ -65,6 +65,8 @@ class DangKyController extends Controller
         if ($request->filled('trang_thai')) {
             if ($request->trang_thai === 'cho_thanh_toan') {
                 $q->where('trang_thai_thanh_toan', 'cho_thanh_toan')->where('trang_thai', '!=', 'da_huy');
+            } elseif ($request->trang_thai === 'het_han_bo_sung') {
+                $q->where('trang_thai', 'cho_bo_sung')->where('han_bo_sung', '<', now());
             } else {
                 $q->where('trang_thai', $request->trang_thai);
             }
@@ -280,5 +282,160 @@ class DangKyController extends Controller
         }
 
         return back()->with('status', 'Đã từ chối hồ sơ đăng ký của sinh viên ' . $dangky->sinhVien->name . '.');
+    }
+
+    // Trường hợp 4: Admin hỗ trợ bổ sung hồ sơ cho sinh viên khi hồ sơ đã hết thời hạn bổ sung
+    public function hoTroBoSungQuaHan(Request $request, LichThi $lichthi, DangKy $dangky)
+    {
+        // 1. Kiểm tra điều kiện hồ sơ phải đang ở trạng thái 'cho_bo_sung' và đã hết hạn trực tuyến
+        if ($dangky->trang_thai !== 'cho_bo_sung' || ! $dangky->isHetHanBoSungOnline()) {
+            return back()->withErrors(['dangky' => 'Chức năng này chỉ áp dụng cho hồ sơ có trạng thái Yêu cầu bổ sung và đã hết thời hạn bổ sung trực tuyến.']);
+        }
+
+        // 2. Validate dữ liệu
+        $messages = [
+            'ly_do_bo_sung_qua_han.required' => 'Vui lòng nhập lý do bổ sung sau thời hạn.',
+            'so_dien_thoai.digits' => 'Số điện thoại phải bao gồm đúng 10 chữ số.',
+            'ngay_sinh.before_or_equal' => 'Thí sinh phải từ đủ 18 tuổi trở lên mới được đăng ký dự thi.',
+            'so_cccd.digits' => 'Số CCCD phải bao gồm đúng 12 chữ số.',
+            'email_lien_he.email' => 'Email liên hệ không đúng định dạng.',
+            'anh_cccd_truoc.image' => 'Ảnh CCCD mặt trước phải là file ảnh (jpg, png...).',
+            'anh_cccd_sau.image' => 'Ảnh CCCD mặt sau phải là file ảnh (jpg, png...).',
+            'anh_ho_so.image' => 'Ảnh hồ sơ 3x4 phải là file ảnh (jpg, png...).',
+            'anh_the_sv.image' => 'Ảnh thẻ sinh viên phải là file ảnh (jpg, png...).',
+            'anh_cccd_truoc.max' => 'Dung lượng ảnh CCCD mặt trước tối đa 2MB.',
+            'anh_cccd_sau.max' => 'Dung lượng ảnh CCCD mặt sau tối đa 2MB.',
+            'anh_ho_so.max' => 'Dung lượng ảnh hồ sơ tối đa 2MB.',
+            'anh_the_sv.max' => 'Dung lượng ảnh thẻ SV tối đa 2MB.',
+        ];
+
+        $data = $request->validate([
+            'ly_do_bo_sung_qua_han' => ['required', 'string', 'max:1000'],
+            'ghi_chu_can_bo' => ['nullable', 'string', 'max:1000'],
+
+            'so_dien_thoai' => ['nullable', 'digits:10'],
+            'ngay_sinh' => ['nullable', 'date', 'before_or_equal:' . now()->subYears(18)->toDateString()],
+            'gioi_tinh' => ['nullable', 'in:nam,nu,khac'],
+            'dan_toc' => ['nullable', 'string', 'max:100'],
+            'noi_sinh' => ['nullable', 'string', 'max:255'],
+            'so_cccd' => ['nullable', 'digits:12'],
+            'tinh_thanh_pho' => ['nullable', 'string'],
+            'xa_phuong' => ['nullable', 'string'],
+            'dia_chi_chi_tiet' => ['nullable', 'string', 'max:255'],
+            'email_lien_he' => ['nullable', 'email', 'max:255'],
+
+            'anh_cccd_truoc' => ['nullable', 'image', 'max:2048'],
+            'anh_cccd_sau' => ['nullable', 'image', 'max:2048'],
+            'anh_ho_so' => ['nullable', 'image', 'max:2048'],
+            'anh_the_sv' => ['nullable', 'image', 'max:2048'],
+        ], $messages);
+
+        $updateData = [];
+        $thayDoiList = [];
+
+        // Tra tên tỉnh/thành & xã/phường nếu được chọn
+        if (! empty($data['tinh_thanh_pho']) && ! empty($data['xa_phuong'])) {
+            [$tenTinh, $tenXa] = $this->layTenTinhXa($data['tinh_thanh_pho'], $data['xa_phuong']);
+            if ($tenTinh && $tenXa) {
+                if ($dangky->tinh_thanh_pho_code !== $data['tinh_thanh_pho'] || $dangky->xa_phuong_code !== $data['xa_phuong']) {
+                    $thayDoiList[] = "- Địa chỉ hành chính: {$dangky->xa_phuong_ten}, {$dangky->tinh_thanh_pho_ten} ➔ {$tenXa}, {$tenTinh}";
+                }
+                $updateData['tinh_thanh_pho_code'] = $data['tinh_thanh_pho'];
+                $updateData['tinh_thanh_pho_ten'] = $tenTinh;
+                $updateData['xa_phuong_code'] = $data['xa_phuong'];
+                $updateData['xa_phuong_ten'] = $tenXa;
+            }
+        }
+
+        $fieldsMap = [
+            'so_dien_thoai' => 'Số điện thoại',
+            'ngay_sinh' => 'Ngày sinh',
+            'gioi_tinh' => 'Giới tính',
+            'dan_toc' => 'Dân tộc',
+            'noi_sinh' => 'Nơi sinh',
+            'so_cccd' => 'Số CCCD',
+            'dia_chi_chi_tiet' => 'Địa chỉ chi tiết',
+            'email_lien_he' => 'Email liên hệ',
+        ];
+
+        foreach ($fieldsMap as $field => $label) {
+            if (isset($data[$field]) && $data[$field] !== null) {
+                $oldVal = $field === 'ngay_sinh' ? optional($dangky->ngay_sinh)->format('d/m/Y') : $dangky->$field;
+                $newVal = $field === 'ngay_sinh' ? date('d/m/Y', strtotime($data[$field])) : $data[$field];
+                if ((string)$oldVal !== (string)$newVal) {
+                    $thayDoiList[] = "- {$label}: " . ($oldVal ?: '(Trống)') . " ➔ {$newVal}";
+                    $updateData[$field] = $data[$field];
+                }
+            }
+        }
+
+        // Xử lý tệp/hình ảnh minh chứng
+        $imgMap = [
+            'anh_cccd_truoc' => 'Ảnh CCCD mặt trước',
+            'anh_cccd_sau' => 'Ảnh CCCD mặt sau',
+            'anh_ho_so' => 'Ảnh hồ sơ 3x4',
+            'anh_the_sv' => 'Ảnh thẻ sinh viên',
+        ];
+
+        foreach ($imgMap as $imgField => $imgLabel) {
+            if ($request->hasFile($imgField) && $request->file($imgField)->isValid()) {
+                $path = $request->file($imgField)->store('hoso/' . $dangky->sinh_vien_id, 'public');
+                $updateData[$imgField] = $path;
+                $thayDoiList[] = "- {$imgLabel}: Đã cập nhật/thay thế tệp minh chứng mới";
+            }
+        }
+
+        $trangThaiTruoc = $dangky->trang_thai;
+        $updateData['trang_thai'] = 'da_bo_sung';
+        $updateData['ngay_bo_sung'] = now();
+        $updateData['nguoi_duyet_id'] = Auth::id();
+
+        $dangky->update($updateData);
+
+        // Tổng hợp nội dung ghi nhật ký xử lý hồ sơ
+        $noiDungLog = "Cán bộ Phòng Khảo thí đã hỗ trợ sinh viên bổ sung hồ sơ sau thời hạn.\n";
+        $noiDungLog .= "📌 Lý do bổ sung sau thời hạn: " . $data['ly_do_bo_sung_qua_han'] . "\n";
+        if (! empty($data['ghi_chu_can_bo'])) {
+            $noiDungLog .= "📝 Ghi chú cán bộ: " . $data['ghi_chu_can_bo'] . "\n";
+        }
+        if (! empty($thayDoiList)) {
+            $noiDungLog .= "📋 Danh sách các mục đã cập nhật:\n" . implode("\n", $thayDoiList);
+        } else {
+            $noiDungLog .= "📋 Cán bộ đã kiểm tra và giữ nguyên các thông tin hồ sơ hiện tại.";
+        }
+
+        // Ghi nhật ký xử lý hồ sơ (Audit Log)
+        LichSuXuLyHoSo::create([
+            'dang_ky_id' => $dangky->id,
+            'user_id' => Auth::id(),
+            'vai_tro' => 'admin',
+            'hanh_dong' => 'bo_sung_ho_so_qua_han',
+            'trang_thai_truoc' => $trangThaiTruoc,
+            'trang_thai_sau' => 'da_bo_sung',
+            'noi_dung' => $noiDungLog,
+        ]);
+
+        return back()->with('status', 'Bổ sung hồ sơ thành công.');
+    }
+
+    private function layTenTinhXa(?string $maTinh, ?string $maXa): array
+    {
+        static $ds = null;
+        if ($ds === null) {
+            $path = public_path('data/vn-address.json');
+            $ds = file_exists($path) ? json_decode(file_get_contents($path), true) : [];
+        }
+
+        foreach ($ds as $tinh) {
+            if ($tinh['c'] === $maTinh) {
+                foreach ($tinh['w'] as $xa) {
+                    if ($xa['c'] === $maXa) {
+                        return [$tinh['n'], $xa['n']];
+                    }
+                }
+                return [$tinh['n'], null];
+            }
+        }
+        return [null, null];
     }
 }

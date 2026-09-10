@@ -91,6 +91,11 @@ class DangKy extends Model
         return now()->gt($this->han_bo_sung);
     }
 
+    public function isChoBoSungQuaHan(): bool
+    {
+        return $this->trang_thai === 'cho_bo_sung' && $this->isHetHanBoSungOnline();
+    }
+
     public function hanCuoiBoSungTrucTiep(): string
     {
         if (! $this->lichThi || ! $this->lichThi->ngay_thi) {
@@ -170,6 +175,10 @@ class DangKy extends Model
     {
         if ($this->trang_thai_thanh_toan === 'cho_thanh_toan' && $this->trang_thai !== 'da_huy') {
             return 'Chờ thanh toán';
+        }
+
+        if ($this->isChoBoSungQuaHan()) {
+            return 'Hết hạn bổ sung';
         }
 
         return match ($this->trang_thai) {

@@ -108,13 +108,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('de-thi/{dethi}/import', [DeThiController::class, 'importQuestions'])->name('dethi.import');
     Route::delete('de-thi/{dethi}/cau-hoi/{cauhoi}', [DeThiController::class, 'destroyQuestion'])->name('dethi.cauhoi.destroy');
 
-    // M4: Đăng ký thi - duyệt/yêu cầu bổ sung/từ chối
+    // M4: Đăng ký thi - duyệt/yêu cầu bổ sung/từ chối/hỗ trợ bổ sung quá hạn
     Route::get('dang-ky-thi', [AdminDangKyController::class, 'danhSachLichThi'])->name('dangky.danhsach');
     Route::get('lich-thi/{lichthi}/dang-ky', [AdminDangKyController::class, 'index'])->name('dangky.index');
     Route::get('lich-thi/{lichthi}/dang-ky/{dangky}', [AdminDangKyController::class, 'show'])->name('dangky.show');
     Route::post('lich-thi/{lichthi}/dang-ky/{dangky}/duyet', [AdminDangKyController::class, 'approve'])->name('dangky.approve');
     Route::post('lich-thi/{lichthi}/dang-ky/{dangky}/tu-choi', [AdminDangKyController::class, 'reject'])->name('dangky.reject');
     Route::post('lich-thi/{lichthi}/dang-ky/{dangky}/bo-sung', [AdminDangKyController::class, 'yeuCauBoSung'])->name('dangky.bosung');
+    Route::post('lich-thi/{lichthi}/dang-ky/{dangky}/ho-tro-bo-sung', [AdminDangKyController::class, 'hoTroBoSungQuaHan'])->name('dangky.hotrobosung');
 
     // M5: Tổ chức thi
     Route::get('to-chuc-thi', [ToChucThiController::class, 'index'])->name('tochuc.index');

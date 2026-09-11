@@ -386,14 +386,17 @@ class DangKyController extends Controller
         }
 
         $trangThaiTruoc = $dangky->trang_thai;
-        $updateData['trang_thai'] = 'da_bo_sung';
+        // Cán bộ đã trực tiếp kiểm tra & hoàn thiện hồ sơ thay sinh viên nên hồ sơ được duyệt luôn,
+        // đồng nhất trạng thái 'da_duyet' (Đã duyệt) giống như khi Admin bấm Duyệt hồ sơ bình thường.
+        $updateData['trang_thai'] = 'da_duyet';
         $updateData['ngay_bo_sung'] = now();
+        $updateData['ngay_duyet'] = now();
         $updateData['nguoi_duyet_id'] = Auth::id();
 
         $dangky->update($updateData);
 
         // Tổng hợp nội dung ghi nhật ký xử lý hồ sơ
-        $noiDungLog = "Cán bộ Phòng Khảo thí đã hỗ trợ sinh viên bổ sung hồ sơ sau thời hạn.\n";
+        $noiDungLog = "Cán bộ Phòng Khảo thí đã hỗ trợ sinh viên bổ sung hồ sơ sau thời hạn và duyệt hồ sơ.\n";
         $noiDungLog .= "📌 Lý do bổ sung sau thời hạn: " . $data['ly_do_bo_sung_qua_han'] . "\n";
         if (! empty($data['ghi_chu_can_bo'])) {
             $noiDungLog .= "📝 Ghi chú cán bộ: " . $data['ghi_chu_can_bo'] . "\n";
@@ -411,11 +414,20 @@ class DangKyController extends Controller
             'vai_tro' => 'admin',
             'hanh_dong' => 'bo_sung_ho_so_qua_han',
             'trang_thai_truoc' => $trangThaiTruoc,
-            'trang_thai_sau' => 'da_bo_sung',
+            'trang_thai_sau' => 'da_duyet',
             'noi_dung' => $noiDungLog,
         ]);
 
-        return back()->with('status', 'Bổ sung hồ sơ thành công.');
+        // Gửi email thông báo kết quả duyệt cho sinh viên, đồng nhất với luồng Duyệt hồ sơ thông thường
+        try {
+            Mail::to($dangky->sinhVien->email)
+                ->cc($dangky->email_lien_he && $dangky->email_lien_he !== $dangky->sinhVien->email ? [$dangky->email_lien_he] : [])
+                ->send(new KetQuaDuyetMail($dangky));
+        } catch (\Throwable $e) {
+            // Không làm gián đoạn nếu mail chưa cấu hình
+        }
+
+        return back()->with('status', 'Bổ sung hồ sơ thành công. Hồ sơ đã được duyệt.');
     }
 
     private function layTenTinhXa(?string $maTinh, ?string $maXa): array

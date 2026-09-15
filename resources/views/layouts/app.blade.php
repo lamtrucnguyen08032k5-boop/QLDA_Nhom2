@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Hệ thống thi chứng chỉ HVNH')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{{ asset('css/theme.css') }}" rel="stylesheet">
     <style> body { min-height: 100vh; } </style>
 </head>
@@ -12,7 +13,7 @@
 <div class="d-flex">
     <nav class="sidebar" style="width:250px;">
         <div class="brand">
-            <img src="{{ asset('images/logo.svg') }}" alt="Logo" width="30" height="33">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo" width="30" height="35">
             <span>HVNH Khảo thí</span>
         </div>
         <div class="px-2">
@@ -21,7 +22,7 @@
                 <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">Tổng quan</a>
                 <a href="{{ route('admin.khoa.index') }}" class="{{ request()->routeIs('admin.khoa.*') ? 'active' : '' }}">Quản lý Khoa</a>
                 <a href="{{ route('admin.svwhitelist.index') }}" class="{{ request()->routeIs('admin.svwhitelist.*') ? 'active' : '' }}">Kho email Sinh viên</a>
-                <a href="{{ route('admin.lichthi.index') }}" class="{{ request()->routeIs('admin.lichthi.*') ? 'active' : '' }}">Lịch thi</a>
+                <a href="{{ route('admin.lichthi.index') }}" class="{{ request()->routeIs('admin.lichthi.*') ? 'active' : '' }}">Quản lý kỳ thi</a>
                 <a href="{{ route('admin.dangky.danhsach') }}" class="{{ request()->routeIs('admin.dangky.*') ? 'active' : '' }}">Danh sách đăng ký thi</a>
                 <a href="{{ route('admin.dethi.index') }}" class="{{ request()->routeIs('admin.dethi.*') ? 'active' : '' }}">Kho đề thi</a>
                 <a href="{{ route('admin.tochuc.index') }}" class="{{ request()->routeIs('admin.tochuc.*') ? 'active' : '' }}">Tổ chức thi</a>
@@ -75,6 +76,33 @@
     </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.toggle-password');
+            if (!btn) return;
+            
+            const group = btn.closest('.input-group') || btn.parentElement;
+            const input = group ? group.querySelector('input') : null;
+            if (!input) return;
+
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) {
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                }
+            } else {
+                input.type = 'password';
+                if (icon) {
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                }
+            }
+        });
+    });
+</script>
 @yield('scripts')
 </body>
 </html>

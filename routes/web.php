@@ -82,7 +82,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // M1: Quản lý Khoa & tạo tài khoản Khoa/Giảng viên
-    Route::resource('khoa', KhoaController::class)->except(['destroy']);
+    Route::post('khoa/import', [KhoaController::class, 'importKhoa'])->name('khoa.import');
+    Route::get('khoa/sample-csv', [KhoaController::class, 'downloadKhoaSample'])->name('khoa.sample');
+    Route::resource('khoa', KhoaController::class);
+    Route::post('khoa/{khoa}/giang-vien/import', [KhoaController::class, 'importGiangVien'])->name('khoa.giangvien.import');
+    Route::get('khoa/{khoa}/giang-vien/sample-csv', [KhoaController::class, 'downloadGiangVienSample'])->name('khoa.giangvien.sample');
     Route::post('khoa/{khoa}/giang-vien', [KhoaController::class, 'storeGiangVien'])->name('khoa.giangvien.store');
     Route::put('khoa/{khoa}/giang-vien/{giangvien}', [KhoaController::class, 'updateGiangVien'])->name('khoa.giangvien.update');
     Route::delete('khoa/{khoa}/giang-vien/{giangvien}', [KhoaController::class, 'destroyGiangVien'])->name('khoa.giangvien.destroy');
@@ -94,6 +98,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::delete('sinh-vien/{sv}', [SvWhitelistController::class, 'destroy'])->name('svwhitelist.destroy');
 
     // M2: Quản lý kỳ thi / lịch thi
+    Route::delete('lich-thi/ca-thi/{lichthi}', [LichThiController::class, 'destroyLichThi'])->name('lichthi.cathi.destroy');
     Route::resource('lich-thi', LichThiController::class)
         ->except(['show'])
         ->names('lichthi')

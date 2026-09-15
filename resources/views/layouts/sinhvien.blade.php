@@ -20,7 +20,7 @@
     <nav class="hvnh-navbar py-2">
         <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
             <a href="{{ route('sinhvien.dashboard') }}" class="d-flex align-items-center gap-2 text-decoration-none">
-                <img src="{{ asset('images/logo.svg') }}" alt="Logo HVNH" width="42" height="46">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo HVNH" width="40" height="46">
                 <span>
                     <span class="brand-text d-block">HỌC VIỆN NGÂN HÀNG</span>
                     <span class="brand-sub">HỆ THỐNG ĐĂNG KÝ THI CHỨNG CHỈ</span>
@@ -80,7 +80,7 @@
                 {{-- Cột 1: Thông tin Học viện Ngân hàng & Trung tâm --}}
                 <div class="col-lg-5 col-md-6">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <img src="{{ asset('images/logo.svg') }}" alt="Logo HVNH" width="46" height="50" style="filter: brightness(1.2);">
+                        <img src="{{ asset('images/logo.png') }}" alt="Logo HVNH" width="44" height="50">
                         <div>
                             <div class="fw-bold fs-5 text-white" style="line-height: 1.2; letter-spacing: 0.5px;">HỌC VIỆN NGÂN HÀNG</div>
                             <div class="small text-white-50" style="font-size: 0.72rem; letter-spacing: 0.8px;">BANKING ACADEMY OF VIETNAM</div>

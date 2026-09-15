@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class RegisterController extends Controller
 {
-    // UC1.1 bước 1-10: nhập email trường -> kiểm tra whitelist -> gửi link xác minh
+    // UC Đăng ký: bước 1-10 (nhập email trường -> kiểm tra -> gửi link xác minh)
     public function showForm()
     {
         return view('auth.register');
@@ -22,53 +22,65 @@ class RegisterController extends Controller
 
     public function submit(Request $request)
     {
-        $request->validate([
-            'email' => ['required', 'email'],
-        ]);
+        $input = trim($request->input('email_username') ?? $request->input('email') ?? '');
 
-        $email = strtolower($request->email);
+        if (empty($input)) {
+            return back()->withErrors(['email' => 'Vui lòng nhập email trường.'])->withInput();
+        }
+
+        // Tự động chuẩn hóa email trường: nếu người dùng chỉ nhập "22A4000001" hoặc nhập đủ "22A4000001@hvnh.edu.vn"
+        if (str_contains($input, '@')) {
+            $parts = explode('@', $input);
+            $email = strtolower(trim($parts[0])) . '@hvnh.edu.vn';
+        } else {
+            $email = strtolower($input) . '@hvnh.edu.vn';
+        }
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return back()->withErrors(['email' => 'Địa chỉ email không đúng định dạng.'])->withInput();
+        }
+
         $domain = config('app.student_email_domain', '@hvnh.edu.vn');
 
-        // Luồng phụ 1: email không đúng định dạng / không thuộc tên miền trường
+        // Luồng phụ 1: Email không hợp lệ (không đúng định dạng hoặc không thuộc tên miền trường)
         if (! str_ends_with($email, $domain)) {
-            return back()->withErrors(['email' => "Email phải thuộc tên miền {$domain} của trường."])->withInput();
+            return back()->withErrors(['email' => "Email không hợp lệ hoặc không thuộc tên miền {$domain} của trường."])->withInput();
         }
 
-        // Sinh viên phải có trong kho email (whitelist) do Admin import trước
-        $sv = SvWhitelist::where('email', $email)->first();
-        if (! $sv) {
-            return back()->withErrors(['email' => 'Email này không có trong danh sách sinh viên của Học viện.'])->withInput();
-        }
-
-        // Luồng phụ 2: email đã được đăng ký
+        // Luồng phụ 2: Email đã được đăng ký
         if (User::where('email', $email)->exists()) {
-            return back()->withErrors(['email' => 'Email đã được đăng ký tài khoản. Vui lòng đăng nhập hoặc dùng Quên mật khẩu.'])->withInput();
+            return back()->withErrors(['email' => 'Email này đã được đăng ký tài khoản. Bạn có thể Đăng nhập hoặc chọn Quên mật khẩu.'])->withInput();
         }
+
+        // Kiểm tra whitelist sinh viên (nếu có)
+        $sv = SvWhitelist::where('email', $email)->first();
 
         $token = Str::random(48);
         DB::table('email_verification_tokens')->insert([
             'email' => $email,
             'token' => $token,
-            'expires_at' => now()->addHours(24),
+            'expires_at' => now()->addMinutes(15),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         $verifyUrl = route('register.verify', ['token' => $token]);
+        $hoTen = $sv ? $sv->ho_ten : 'Sinh viên';
 
-        // Gửi email xác minh (dùng Notification/Mail thực tế khi cấu hình SMTP trong .env)
-        Mail::raw("Xin chào {$sv->ho_ten},\n\nVui lòng bấm vào liên kết sau để xác minh và hoàn tất đăng ký tài khoản thi chứng chỉ HVNH:\n{$verifyUrl}\n\nLiên kết có hiệu lực trong 24 giờ.", function ($message) use ($email) {
+        // Gửi email xác minh (hiệu lực 15 phút)
+        Mail::raw("Xin chào {$hoTen},\n\nVui lòng bấm vào liên kết sau để xác minh và hoàn tất đăng ký tài khoản:\n{$verifyUrl}\n\nLiên kết này chỉ có hiệu lực trong vòng 15 phút.", function ($message) use ($email) {
             $message->to($email)->subject('Xác minh tài khoản - Hệ thống thi chứng chỉ HVNH');
         });
 
         return view('auth.register-sent', ['email' => $email]);
     }
 
-    // UC1.1 bước 11-18: xác minh liên kết -> thiết lập mật khẩu -> tạo tài khoản
+    // UC Đăng ký: bước 11-13 (xác minh liên kết -> hiển thị giao diện thiết lập mật khẩu)
     public function showVerify(string $token)
     {
         $row = DB::table('email_verification_tokens')->where('token', $token)->first();
 
+        // Luồng phụ 3: Liên kết xác minh không hợp lệ hoặc hết hạn
         if (! $row || now()->greaterThan($row->expires_at)) {
             return view('auth.verify-expired');
         }
@@ -76,40 +88,51 @@ class RegisterController extends Controller
         return view('auth.set-password', ['token' => $token, 'email' => $row->email]);
     }
 
+    // UC Đăng ký: bước 14-18 (thiết lập mật khẩu -> tạo tài khoản -> thông báo thành công)
     public function completeRegistration(Request $request)
     {
+        // Luồng phụ 4: Mật khẩu không hợp lệ
         $request->validate([
             'token' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'token.required' => 'Mã xác minh không hợp lệ.',
+            'password.required' => 'Vui lòng nhập mật khẩu.',
+            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
+            'password.confirmed' => 'Mật khẩu xác nhận không khớp.',
         ]);
 
         $row = DB::table('email_verification_tokens')->where('token', $request->token)->first();
 
+        // Luồng phụ 3: Liên kết xác minh không hợp lệ hoặc hết hạn
         if (! $row || now()->greaterThan($row->expires_at)) {
             return view('auth.verify-expired');
         }
 
         $sv = SvWhitelist::where('email', $row->email)->first();
-        if (! $sv) {
-            abort(404);
-        }
+        $maSo = $sv ? $sv->ma_sv : explode('@', $row->email)[0];
+        $hoTen = $sv ? $sv->ho_ten : 'Sinh viên ' . strtoupper($maSo);
+        $lop = $sv ? $sv->lop : null;
+        $khoaHoc = $sv ? $sv->khoa_hoc : null;
 
-        $user = User::create([
+        User::create([
             'role' => 'sinhvien',
-            'ma_so' => $sv->ma_sv,
-            'name' => $sv->ho_ten,
+            'ma_so' => $maSo,
+            'name' => $hoTen,
             'email' => $row->email,
             'password' => Hash::make($request->password),
-            'lop' => $sv->lop,
-            'khoa_hoc' => $sv->khoa_hoc,
+            'lop' => $lop,
+            'khoa_hoc' => $khoaHoc,
             'email_verified_at' => now(),
         ]);
 
-        $sv->update(['da_dang_ky' => true]);
+        if ($sv) {
+            $sv->update(['da_dang_ky' => true]);
+        }
+
         DB::table('email_verification_tokens')->where('token', $request->token)->delete();
 
-        auth()->login($user);
-
-        return redirect()->route('sinhvien.dashboard')->with('status', 'Đăng ký tài khoản thành công!');
+        // Bước 18: Hệ thống hiển thị thông báo “Đăng ký tài khoản thành công”
+        return redirect()->route('login')->with('status', 'Đăng ký tài khoản thành công. Vui lòng đăng nhập vào hệ thống.');
     }
 }

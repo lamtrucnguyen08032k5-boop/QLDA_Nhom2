@@ -633,18 +633,6 @@
                             <input type="email" name="email_lien_he" class="form-control form-control-sm" value="{{ old('email_lien_he', $dk->email_lien_he) }}" placeholder="Email nhận thông báo">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold">Tỉnh/Thành phố</label>
-                            <select id="select_tinh_{{ $dk->id }}" name="tinh_thanh_pho" class="form-select form-select-sm" data-old-value="{{ old('tinh_thanh_pho', $dk->tinh_thanh_pho_code) }}">
-                                <option value="">Chọn tỉnh/thành phố</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Xã/Phường</label>
-                            <select id="select_xa_{{ $dk->id }}" name="xa_phuong" class="form-select form-select-sm" data-old-value="{{ old('xa_phuong', $dk->xa_phuong_code) }}" disabled>
-                                <option value="">Chọn xã/phường</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
                             <label class="form-label small fw-bold">Địa chỉ chi tiết (Số nhà, đường...)</label>
                             <input type="text" name="dia_chi_chi_tiet" class="form-control form-control-sm" value="{{ old('dia_chi_chi_tiet', $dk->dia_chi_chi_tiet) }}" placeholder="Số nhà, tên đường">
                         </div>
@@ -704,71 +692,7 @@
         </div>
     </div>
 
-    <!-- MODAL XÁC NHẬN BỔ SUNG HỒ SƠ (thay cho popup confirm() mặc định của trình duyệt) -->
-    <div class="modal fade" id="confirmHoTroBoSungModal{{ $dk->id }}" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">🛠️ Hỗ trợ bổ sung hồ sơ</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="mb-0">Bạn có chắc chắn muốn bổ sung hồ sơ thay cho sinh viên <strong>{{ $dk->sinhVien->name }}</strong> này không?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
-                    <button type="button" class="btn btn-primary px-4 fw-bold" id="btnConfirmHoTroBoSungOk{{ $dk->id }}">OK, xác nhận</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
-    // Cascading dropdown Tỉnh/Thành phố -> Xã/Phường cho modal hỗ trợ bổ sung (giống form đăng ký)
-    (function () {
-        var selectTinh = document.getElementById('select_tinh_{{ $dk->id }}');
-        var selectXa = document.getElementById('select_xa_{{ $dk->id }}');
-        if (!selectTinh || !selectXa) return;
-
-        var oldTinh = selectTinh.dataset.oldValue || '';
-        var oldXa = selectXa.dataset.oldValue || '';
-
-        fetch('{{ asset("data/vn-address.json") }}')
-            .then(function (res) { return res.json(); })
-            .then(function (data) {
-                data.forEach(function (tinh) {
-                    var opt = document.createElement('option');
-                    opt.value = tinh.c;
-                    opt.textContent = tinh.n;
-                    if (tinh.c === oldTinh) opt.selected = true;
-                    selectTinh.appendChild(opt);
-                });
-
-                function napXaPhuong(maTinh, maXaChon) {
-                    selectXa.innerHTML = '<option value="">Chọn xã/phường</option>';
-                    var tinh = data.find(function (t) { return t.c === maTinh; });
-                    if (!tinh) { selectXa.disabled = true; return; }
-                    tinh.w.forEach(function (xa) {
-                        var opt = document.createElement('option');
-                        opt.value = xa.c;
-                        opt.textContent = xa.n;
-                        if (xa.c === maXaChon) opt.selected = true;
-                        selectXa.appendChild(opt);
-                    });
-                    selectXa.disabled = false;
-                }
-
-                if (oldTinh) napXaPhuong(oldTinh, oldXa);
-
-                selectTinh.addEventListener('change', function () {
-                    napXaPhuong(this.value, null);
-                });
-            })
-            .catch(function () {
-                selectTinh.innerHTML = '<option value="">Không tải được danh sách tỉnh/thành</option>';
-            });
-    })();
-
     function confirmHoTroBoSung_{{ $dk->id }}(e) {
         var txtReason = document.getElementById('ly_do_bo_sung_qua_han_{{ $dk->id }}');
         var alertBox = document.getElementById('hoTroBoSungAlert_{{ $dk->id }}');
@@ -788,29 +712,12 @@
 
         if (alertBox) alertBox.style.display = 'none';
 
-        // Chặn submit mặc định, hiển thị popup xác nhận tuỳ chỉnh (Bootstrap modal)
-        // thay vì dùng confirm() mặc định của trình duyệt
-        e.preventDefault();
-
-        var form = e.target;
-        var confirmModalEl = document.getElementById('confirmHoTroBoSungModal{{ $dk->id }}');
-        var confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
-        var btnOk = document.getElementById('btnConfirmHoTroBoSungOk{{ $dk->id }}');
-
-        // Gỡ handler cũ (nếu người dùng từng bấm Hủy trước đó) để tránh gọi submit() nhiều lần
-        if (btnOk._hoTroBoSungHandler) {
-            btnOk.removeEventListener('click', btnOk._hoTroBoSungHandler);
+        var ok = confirm('Bạn có chắc chắn muốn bổ sung hồ sơ thay cho sinh viên này không?');
+        if (!ok) {
+            e.preventDefault();
+            return false;
         }
-        var handleOk = function () {
-            confirmModal.hide();
-            form.submit();
-        };
-        btnOk._hoTroBoSungHandler = handleOk;
-        btnOk.addEventListener('click', handleOk);
-
-        confirmModal.show();
-
-        return false;
+        return true;
     }
     </script>
 

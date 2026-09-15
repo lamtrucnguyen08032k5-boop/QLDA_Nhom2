@@ -13,27 +13,37 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    // UC1.2 Đăng nhập
+    // UC Đăng nhập
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        // Luồng phụ 1: Bỏ trống thông tin đăng nhập
+        $request->validate([
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
+        ], [
+            'email.required' => 'Vui lòng nhập Email hoặc Mã số.',
+            'password.required' => 'Vui lòng nhập mật khẩu.',
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors(['email' => 'Email hoặc mật khẩu không đúng.'])->onlyInput('email');
+        $loginInput = $request->input('email');
+        $fieldType = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'ma_so';
+
+        // Luồng phụ 2: Email hoặc mật khẩu không chính xác
+        if (! Auth::attempt([$fieldType => $loginInput, 'password' => $request->password], $request->boolean('remember'))) {
+            return back()->withErrors(['email' => 'Email hoặc mật khẩu không chính xác.'])->onlyInput('email');
         }
 
         $user = Auth::user();
 
+        // Luồng phụ 3: Tài khoản không ở trạng thái hoạt động
         if (! $user->active) {
             Auth::logout();
-            return back()->withErrors(['email' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Phòng khảo thí.']);
+            return back()->withErrors(['email' => 'Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa. Vui lòng liên hệ Quản trị viên.']);
         }
 
         $request->session()->regenerate();
 
+        // Chuyển hướng người dùng đến giao diện phù hợp với vai trò
         return match ($user->role) {
             'admin' => redirect()->route('admin.dashboard'),
             'khoa' => redirect()->route('khoa.dashboard'),

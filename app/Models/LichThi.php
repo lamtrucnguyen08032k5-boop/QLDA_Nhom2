@@ -12,6 +12,7 @@ class LichThi extends Model
         'ky_thi_id', 'ten_ky_thi', 'loai_chung_chi', 'khoa_id', 'ngay_thi', 'gio_bat_dau',
         'thoi_gian_thi_phut', 'phong_thi', 'so_luong_toi_da', 'han_dang_ky',
         'le_phi', 'ma_ca_thi', 'trang_thai', 'de_thi_id',
+        'trang_thai_cong_bo', 'ngay_cong_bo', 'nguoi_cong_bo_id',
     ];
 
     protected function casts(): array
@@ -19,12 +20,18 @@ class LichThi extends Model
         return [
             'ngay_thi' => 'date',
             'han_dang_ky' => 'datetime',
+            'ngay_cong_bo' => 'datetime',
         ];
     }
 
     public function kyThi()
     {
         return $this->belongsTo(KyThi::class, 'ky_thi_id');
+    }
+
+    public function nguoiCongBo()
+    {
+        return $this->belongsTo(User::class, 'nguoi_cong_bo_id');
     }
 
     public function getGioKetThucAttribute(): string

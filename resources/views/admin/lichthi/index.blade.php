@@ -234,7 +234,7 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm small">
                                             <li>
-                                                <a class="dropdown-item" href="{{ route('admin.ketqua.index', $lt->id) }}">
+                                                <a class="dropdown-item" href="{{ route('admin.ketqua.show', $lt->id) }}">
                                                     Quản lý kết quả thi
                                                 </a>
                                             </li>

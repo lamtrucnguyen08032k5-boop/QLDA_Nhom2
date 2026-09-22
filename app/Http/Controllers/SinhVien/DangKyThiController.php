@@ -384,8 +384,12 @@ class DangKyThiController extends Controller
     {
         abort_unless($dangky->sinh_vien_id === Auth::id(), 403);
 
-        if (! in_array($dangky->trang_thai, ['cho_duyet', 'cho_bo_sung'])) {
-            return back()->withErrors(['dangky' => 'Chỉ có thể huỷ đăng ký khi chưa được duyệt.']);
+        if ($dangky->trang_thai_thanh_toan === 'da_thanh_toan') {
+            return back()->withErrors(['dangky' => 'Đơn đăng ký đã thanh toán thành công không thể huỷ.']);
+        }
+
+        if ($dangky->trang_thai === 'da_huy') {
+            return back()->withErrors(['dangky' => 'Đơn đăng ký này đã được huỷ trước đó.']);
         }
 
         $trangThaiTruoc = $dangky->trang_thai;

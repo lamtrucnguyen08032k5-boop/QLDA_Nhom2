@@ -69,6 +69,12 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/dang-xuat', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 
+// Thông báo hệ thống cho người dùng đã đăng nhập
+Route::middleware('auth')->group(function () {
+    Route::post('/thong-bao/{id}/da-doc', [\App\Http\Controllers\NotificationController::class, 'danhDauDaDoc'])->name('notifications.read');
+    Route::post('/thong-bao/doc-tat-ca', [\App\Http\Controllers\NotificationController::class, 'danhDauTatCaDaDoc'])->name('notifications.read-all');
+});
+
 // Điểm trả về (return URL) từ cổng thanh toán VNPAY sau khi sinh viên thanh toán lệ phí thi.
 // Đặt ngoài middleware 'auth' vì đây là redirect từ máy chủ VNPAY, không phải request nội bộ.
 Route::get('/thanh-toan/vnpay/return', [ThanhToanController::class, 'vnpayReturn'])->name('sinhvien.dangky.thanhtoan.vnpay.return');
@@ -130,9 +136,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // M6: Theo dõi tiến độ chấm
     Route::get('cham-thi/tien-do', [AdminChamThiController::class, 'index'])->name('chamthi.tiendo');
 
-    // M7: Kết quả
-    Route::get('lich-thi/{lichthi}/ket-qua', [AdminKetQuaController::class, 'index'])->name('ketqua.index');
+    // M7: Kết quả thi (UC7.1 Admin theo dõi & công bố kết quả thi)
+    Route::get('ket-qua-thi', [AdminKetQuaController::class, 'index'])->name('ketqua.index');
+    Route::get('lich-thi/{lichthi}/ket-qua', [AdminKetQuaController::class, 'show'])->name('ketqua.show');
     Route::post('lich-thi/{lichthi}/ket-qua/cong-bo', [AdminKetQuaController::class, 'congBo'])->name('ketqua.congbo');
+    Route::get('ket-qua-thi/bai-thi/{baithi}', [AdminKetQuaController::class, 'xemBaiThi'])->name('ketqua.baithi');
 
     // M8: Phúc khảo
     Route::get('phuc-khao', [AdminPhucKhaoController::class, 'index'])->name('phuckhao.index');

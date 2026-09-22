@@ -27,6 +27,7 @@
                 <a href="{{ route('admin.dethi.index') }}" class="{{ request()->routeIs('admin.dethi.*') ? 'active' : '' }}">Kho đề thi</a>
                 <a href="{{ route('admin.tochuc.index') }}" class="{{ request()->routeIs('admin.tochuc.*') ? 'active' : '' }}">Tổ chức thi</a>
                 <a href="{{ route('admin.chamthi.tiendo') }}" class="{{ request()->routeIs('admin.chamthi.*') ? 'active' : '' }}">Tiến độ chấm</a>
+                <a href="{{ route('admin.ketqua.index') }}" class="{{ request()->routeIs('admin.ketqua.*') ? 'active' : '' }}">Kết quả thi</a>
                 <a href="{{ route('admin.phuckhao.index') }}" class="{{ request()->routeIs('admin.phuckhao.*') ? 'active' : '' }}">Phúc khảo</a>
                 <a href="{{ route('admin.chungnhan.index') }}" class="{{ request()->routeIs('admin.chungnhan.*') ? 'active' : '' }}">Chứng nhận</a>
             @elseif ($u->role === 'khoa')
@@ -51,6 +52,61 @@
         <nav class="navbar navbar-light bg-white border-bottom px-4">
             <span class="fw-semibold text-primary">@yield('title', 'Trang chủ')</span>
             <div class="d-flex align-items-center gap-3">
+                @php
+                    $unreadCount = auth()->user()->unreadNotifications->count();
+                    $notifications = auth()->user()->notifications()->take(6)->get();
+                @endphp
+                <div class="dropdown">
+                    <button class="btn btn-light position-relative p-1 px-2 border" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo">
+                        <i class="bi bi-bell fs-5 text-secondary"></i>
+                        @if($unreadCount > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                                {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                            </span>
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm p-0" style="width: 330px; max-height: 420px; overflow-y: auto;">
+                        <li class="p-2 border-bottom d-flex justify-content-between align-items-center bg-light">
+                            <span class="fw-bold small text-dark"><i class="bi bi-bell me-1 text-primary"></i>Thông báo</span>
+                            @if($unreadCount > 0)
+                                <form method="POST" action="{{ route('notifications.read-all') }}" class="m-0">
+                                    @csrf
+                                    <button class="btn btn-link p-0 small text-decoration-none" style="font-size: 0.75rem;">Đánh dấu đã đọc</button>
+                                </form>
+                            @endif
+                        </li>
+                        @forelse($notifications as $notif)
+                            @php
+                                $d = $notif->data;
+                                $isUnread = is_null($notif->read_at);
+                            @endphp
+                            <li class="border-bottom {{ $isUnread ? 'bg-light bg-opacity-50' : '' }}">
+                                <form method="POST" action="{{ route('notifications.read', $notif->id) }}" class="m-0">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item text-wrap py-2 px-3 text-start">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <i class="bi {{ $d['icon'] ?? 'bi-bell' }} text-primary mt-1"></i>
+                                            <div class="flex-grow-1">
+                                                <div class="small fw-semibold {{ $isUnread ? 'text-primary' : 'text-dark' }}">{{ $d['tieu_de'] ?? 'Thông báo' }}</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">{{ $d['noi_dung'] ?? '' }}</div>
+                                                <div class="text-secondary opacity-75 mt-1" style="font-size: 0.7rem;">{{ $notif->created_at->locale('vi')->diffForHumans() }}</div>
+                                            </div>
+                                            @if($isUnread)
+                                                <span class="p-1 bg-primary rounded-circle mt-1" title="Chưa đọc"></span>
+                                            @endif
+                                        </div>
+                                    </button>
+                                </form>
+                            </li>
+                        @empty
+                            <li class="p-4 text-center text-muted small">
+                                <i class="bi bi-bell-slash fs-4 d-block mb-1 text-secondary opacity-50"></i>
+                                Không có thông báo mới
+                            </li>
+                        @endforelse
+                    </ul>
+                </div>
+
                 <span class="text-muted small">{{ auth()->user()->name }} ({{ auth()->user()->role }})</span>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

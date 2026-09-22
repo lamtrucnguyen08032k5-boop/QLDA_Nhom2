@@ -95,7 +95,7 @@
                             <a href="{{ route('sinhvien.dangky.buoc4', $dk) }}" class="btn btn-sm btn-outline-primary ms-1">Xem chi tiết</a>
                         @endif
 
-                        @if (in_array($dk->trang_thai, ['cho_duyet','cho_bo_sung']) && $dk->trang_thai_thanh_toan === 'da_thanh_toan')
+                        @if ($dk->trang_thai !== 'da_huy' && $dk->trang_thai_thanh_toan !== 'da_thanh_toan')
                             <form method="POST" action="{{ route('sinhvien.dangky.huy', $dk) }}" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn huỷ đăng ký này không?')">
                                 @csrf
                                 <button class="btn btn-sm btn-outline-danger ms-1">Huỷ</button>

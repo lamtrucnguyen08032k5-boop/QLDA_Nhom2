@@ -19,6 +19,8 @@ use App\Http\Controllers\GiangVien\DashboardController as GvDashboardController;
 use App\Http\Controllers\GiangVien\PhucKhaoController as GvPhucKhaoController;
 use App\Http\Controllers\Khoa\DashboardController as KhoaDashboardController;
 use App\Http\Controllers\Khoa\GiangVienController as KhoaGiangVienController;
+use App\Http\Controllers\Khoa\PhanCongChamController;
+use App\Http\Controllers\Khoa\PhucKhaoController as KhoaPhucKhaoController;
 use App\Http\Controllers\Khoa\TienDoChamController;
 use App\Http\Controllers\SinhVien\ChungNhanController as SvChungNhanController;
 use App\Http\Controllers\SinhVien\DangKyThiController;
@@ -68,6 +70,14 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/dang-xuat', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
+
+// Thông báo hệ thống cho người dùng đã đăng nhập (Chỉ bật khi NotificationController tồn tại)
+if (class_exists('\App\Http\Controllers\NotificationController')) {
+    Route::middleware('auth')->group(function () {
+        Route::post('/thong-bao/{id}/da-doc', [\App\Http\Controllers\NotificationController::class, 'danhDauDaDoc'])->name('notifications.read');
+        Route::post('/thong-bao/doc-tat-ca', [\App\Http\Controllers\NotificationController::class, 'danhDauTatCaDaDoc'])->name('notifications.read-all');
+    });
+}
 
 // Điểm trả về (return URL) từ cổng thanh toán VNPAY sau khi sinh viên thanh toán lệ phí thi.
 // Đặt ngoài middleware 'auth' vì đây là redirect từ máy chủ VNPAY, không phải request nội bộ.
@@ -131,15 +141,23 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('cham-thi/tien-do', [AdminChamThiController::class, 'index'])->name('chamthi.tiendo');
 
     // M7: Kết quả
-    Route::get('lich-thi/{lichthi}/ket-qua', [AdminKetQuaController::class, 'index'])->name('ketqua.index');
+    Route::get('ket-qua-thi', [AdminKetQuaController::class, 'index'])->name('ketqua.index');
+    Route::get('lich-thi/{lichthi}/ket-qua', [AdminKetQuaController::class, 'show'])->name('ketqua.show');
     Route::post('lich-thi/{lichthi}/ket-qua/cong-bo', [AdminKetQuaController::class, 'congBo'])->name('ketqua.congbo');
+    Route::get('ket-qua-thi/bai-thi/{baithi}', [AdminKetQuaController::class, 'xemBaiThi'])->name('ketqua.baithi');
 
     // M8: Phúc khảo
     Route::get('phuc-khao', [AdminPhucKhaoController::class, 'index'])->name('phuckhao.index');
     Route::get('phuc-khao/{phuckhao}', [AdminPhucKhaoController::class, 'show'])->name('phuckhao.show');
+    Route::post('phuc-khao/{phuckhao}/tiep-nhan', [AdminPhucKhaoController::class, 'tiepNhan'])->name('phuckhao.tiep-nhan');
+    Route::post('phuc-khao/{phuckhao}/tu-choi', [AdminPhucKhaoController::class, 'tuChoi'])->name('phuckhao.tu-choi');
+    Route::post('phuc-khao/{phuckhao}/duyet', [AdminPhucKhaoController::class, 'duyet'])->name('phuckhao.duyet');
+    Route::post('phuc-khao/{phuckhao}/tra-lai', [AdminPhucKhaoController::class, 'traLai'])->name('phuckhao.tra-lai');
 
     // M9: Chứng nhận
     Route::get('chung-nhan', [AdminChungNhanController::class, 'index'])->name('chungnhan.index');
+    Route::get('chung-nhan/{chungnhan}', [AdminChungNhanController::class, 'show'])->name('chungnhan.show');
+    Route::post('chung-nhan/{chungnhan}/tiep-nhan', [AdminChungNhanController::class, 'tiepNhan'])->name('chungnhan.tiep-nhan');
     Route::post('chung-nhan/{chungnhan}/cap', [AdminChungNhanController::class, 'capNhan'])->name('chungnhan.cap');
     Route::post('chung-nhan/{chungnhan}/tu-choi', [AdminChungNhanController::class, 'tuChoi'])->name('chungnhan.tuchoi');
 });
@@ -154,6 +172,16 @@ Route::middleware(['auth', 'role:khoa'])->prefix('khoa')->name('khoa.')->group(f
     Route::get('/giang-vien', [KhoaGiangVienController::class, 'index'])->name('giangvien.index');
     Route::post('/giang-vien', [KhoaGiangVienController::class, 'store'])->name('giangvien.store');
     Route::get('/tien-do-cham', [TienDoChamController::class, 'index'])->name('tiendocham');
+
+    // Phân công chấm thi (GV1 & GV2)
+    Route::get('/phan-cong-cham', [PhanCongChamController::class, 'index'])->name('phan-cong-cham.index');
+    Route::get('/phan-cong-cham/{baithi}', [PhanCongChamController::class, 'show'])->name('phan-cong-cham.show');
+    Route::post('/phan-cong-cham/{baithi}', [PhanCongChamController::class, 'phanCong'])->name('phan-cong-cham.update');
+    Route::post('/phan-cong-cham-hang-loat', [PhanCongChamController::class, 'phanCongHangLoat'])->name('phan-cong-cham.hang-loat');
+
+    // Phúc khảo Khoa
+    Route::get('/phuc-khao', [KhoaPhucKhaoController::class, 'index'])->name('phuc-khao.index');
+    Route::post('/phuc-khao/{phuckhao}/phan-cong', [KhoaPhucKhaoController::class, 'phanCong'])->name('phuc-khao.phan-cong');
 });
 
 /*
@@ -167,6 +195,8 @@ Route::middleware(['auth', 'role:giangvien'])->prefix('giang-vien')->name('giang
     Route::get('/cham-thi', [GvChamThiController::class, 'index'])->name('cham-thi.index');
     Route::get('/cham-thi/{baithi}', [GvChamThiController::class, 'show'])->name('cham-thi.show');
     Route::post('/cham-thi/{baithi}', [GvChamThiController::class, 'luuDiem'])->name('cham-thi.luu');
+    Route::get('/cham-thi/{baithi}/thong-nhat', [GvChamThiController::class, 'thongNhat'])->name('cham-thi.thong-nhat');
+    Route::post('/cham-thi/{baithi}/thong-nhat', [GvChamThiController::class, 'luuThongNhat'])->name('cham-thi.luu-thong-nhat');
 
     Route::get('/phuc-khao', [GvPhucKhaoController::class, 'index'])->name('phuc-khao.index');
     Route::get('/phuc-khao/{phuckhao}', [GvPhucKhaoController::class, 'show'])->name('phuc-khao.show');
@@ -215,6 +245,7 @@ Route::middleware(['auth', 'role:sinhvien'])->prefix('sinh-vien')->name('sinhvie
 
     // M9
     Route::get('/chung-nhan', [SvChungNhanController::class, 'index'])->name('chung-nhan.index');
+    Route::get('/chung-nhan/{baithi}/xem', [SvChungNhanController::class, 'show'])->name('chung-nhan.show');
     Route::get('/chung-nhan/{baithi}/tao', [SvChungNhanController::class, 'create'])->name('chung-nhan.create');
     Route::post('/chung-nhan/{baithi}', [SvChungNhanController::class, 'store'])->name('chung-nhan.store');
 });

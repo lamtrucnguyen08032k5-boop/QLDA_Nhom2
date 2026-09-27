@@ -18,11 +18,14 @@ class DashboardController extends Controller
         $tongDangKyDaDuyet = DangKy::where('trang_thai', 'da_duyet')->count();
         $tongDaThi = BaiThi::whereNotNull('gio_nop')->count();
 
-        // Doanh thu = tổng lệ phí của các đăng ký đã duyệt, theo tháng
+        $dateFormat = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', dang_kys.created_at)"
+            : "DATE_FORMAT(dang_kys.created_at, '%Y-%m')";
+
         $doanhThuTheoThang = DangKy::query()
             ->join('lich_this', 'dang_kys.lich_thi_id', '=', 'lich_this.id')
             ->where('dang_kys.trang_thai', 'da_duyet')
-            ->selectRaw("DATE_FORMAT(dang_kys.created_at, '%Y-%m') as thang, SUM(lich_this.le_phi) as tong")
+            ->selectRaw("{$dateFormat} as thang, SUM(lich_this.le_phi) as tong")
             ->groupBy('thang')
             ->orderBy('thang')
             ->get();

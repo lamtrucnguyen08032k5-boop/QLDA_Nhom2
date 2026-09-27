@@ -12,6 +12,8 @@ class BaiThi extends Model
         'ma_bai_thi', 'dang_ky_id', 'de_thi_id', 'gio_bat_dau', 'gio_nop', 'trang_thai',
         'diem_tu_dong', 'diem_cham_tay', 'diem_tong', 'cham_xong',
         'giang_vien_id', 'ngay_cham', 'ngay_cong_bo', 'nguoi_cong_bo_id',
+        'giang_vien_1_id', 'giang_vien_2_id', 'nhan_xet_1', 'nhan_xet_2',
+        'ngay_cham_1', 'ngay_cham_2', 'diem_chot', 'ly_do_thong_nhat', 'da_khoa',
     ];
 
     protected function casts(): array
@@ -20,8 +22,11 @@ class BaiThi extends Model
             'gio_bat_dau' => 'datetime',
             'gio_nop' => 'datetime',
             'ngay_cham' => 'datetime',
+            'ngay_cham_1' => 'datetime',
+            'ngay_cham_2' => 'datetime',
             'ngay_cong_bo' => 'datetime',
             'cham_xong' => 'boolean',
+            'da_khoa' => 'boolean',
         ];
     }
 
@@ -47,6 +52,16 @@ class BaiThi extends Model
     public function giangVien()
     {
         return $this->belongsTo(User::class, 'giang_vien_id');
+    }
+
+    public function giangVien1()
+    {
+        return $this->belongsTo(User::class, 'giang_vien_1_id');
+    }
+
+    public function giangVien2()
+    {
+        return $this->belongsTo(User::class, 'giang_vien_2_id');
     }
 
     public function nguoiCongBo()
@@ -106,13 +121,12 @@ class BaiThi extends Model
 
     public function getTrangThaiBaiLamLabelAttribute(): string
     {
-        if ($this->cham_xong || in_array($this->trang_thai, ['da_cham', 'da_cong_bo'])) {
+        if ($this->cham_xong || in_array($this->trang_thai, ['da_cham', 'da_chot', 'da_cong_bo'])) {
             return 'Đã chấm';
         }
-        if ($this->trang_thai === 'dang_cham') {
+        if (in_array($this->trang_thai, ['dang_cham', 'dang_cham_1', 'dang_cham_2', 'cho_cham_1', 'cho_cham_2', 'cho_thong_nhat'])) {
             return 'Đang chấm';
         }
         return 'Chưa chấm';
     }
 }
-

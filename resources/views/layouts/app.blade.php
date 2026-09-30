@@ -56,8 +56,9 @@
             <div class="d-flex align-items-center gap-3">
                 @if ($u)
                     @php
-                        $unreadCount = $u->unreadNotifications ? $u->unreadNotifications->count() : 0;
-                        $notifications = $u->notifications() ? $u->notifications()->take(6)->get() : collect();
+                        $hasNotifTable = \Illuminate\Support\Facades\Schema::hasTable('notifications');
+                        $unreadCount = $hasNotifTable && $u->unreadNotifications ? $u->unreadNotifications->count() : 0;
+                        $notifications = $hasNotifTable && $u->notifications() ? $u->notifications()->take(6)->get() : collect();
                     @endphp
                     <div class="dropdown">
                         <button class="btn btn-light position-relative p-1 px-2 border" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo">

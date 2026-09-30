@@ -195,10 +195,8 @@
                                 <span class="fw-semibold text-dark">{{ $lt->ngay_thi ? $lt->ngay_thi->format('d/m/Y') : '-' }}</span>
                             </td>
                             <td>
-                                <div class="fw-bold text-dark font-monospace">{{ $lt->ma_ca_thi }}</div>
-                                <div class="text-muted small mt-1">
-                                    {{ \Carbon\Carbon::parse($lt->gio_bat_dau)->format('H:i') }} - {{ $lt->gio_ket_thuc }} ({{ $lt->thoi_gian_thi_phut }}p)
-                                </div>
+                                <div class="fw-bold text-primary"><i class="bi bi-clock me-1"></i>{{ \Carbon\Carbon::parse($lt->gio_bat_dau)->format('H:i') }} - {{ $lt->gio_ket_thuc }}</div>
+                                <div class="text-muted small mt-1">Thời gian: {{ $lt->thoi_gian_thi_phut }} phút</div>
                             </td>
                             <td>
                                 <span class="badge bg-light text-dark border px-2 py-1">
@@ -262,7 +260,7 @@
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                 </div>
                                                 <div class="modal-body p-4">
-                                                    <p class="mb-2">Bạn có chắc chắn muốn xóa ca thi <strong>{{ $lt->ma_ca_thi }}</strong> (Phòng {{ $lt->phong_thi }}, Ngày {{ $lt->ngay_thi ? $lt->ngay_thi->format('d/m/Y') : '' }})?</p>
+                                                    <p class="mb-2">Bạn có chắc chắn muốn xóa lịch thi <strong>{{ $lt->phong_thi }}</strong> ({{ $lt->loai_chung_chi === 'tienganh' ? 'Tiếng Anh' : 'CNTT' }}, {{ $lt->gio_bat_dau ? \Carbon\Carbon::parse($lt->gio_bat_dau)->format('H:i') : '' }}, Ngày {{ $lt->ngay_thi ? $lt->ngay_thi->format('d/m/Y') : '' }})?</p>
                                                     <div class="alert alert-warning small py-2 mb-0">
                                                         Lưu ý: Hệ thống chỉ cho phép xóa ca thi khi <strong>chưa có thí sinh nào đăng ký dự thi</strong>.
                                                     </div>

@@ -16,68 +16,158 @@ use Illuminate\Support\Str;
 class KetQuaController extends Controller
 {
     /**
-     * Danh sách lịch thi theo từng ngày, ca thi và phòng thi
+     * Danh sách kỳ thi dạng thẻ (Cards) hoặc danh sách lịch thi/ca thi chi tiết
      */
     public function index(Request $request)
     {
-        $q = LichThi::with(['khoa', 'deThi', 'dangKys'])
-            ->withCount([
-                // Số lượng sinh viên dự thi (đã có bài làm hoặc đăng ký hợp lệ)
-                'dangKys as tong_sinh_vien' => function ($query) {
-                    $query->whereIn('trang_thai', ['da_duyet']);
-                },
-                'dangKys as tong_bai_thi' => function ($query) {
-                    $query->whereHas('baiThi');
-                },
-                'dangKys as tong_bai_da_cham' => function ($query) {
-                    $query->whereHas('baiThi', function ($b) {
-                        $b->where('cham_xong', true)->orWhere('trang_thai', 'da_cong_bo');
-                    });
-                },
+        $selectedKyThi = $request->get('ky_thi');
+        $isSearching = $request->anyFilled(['q', 'ngay_thi', 'phong_thi', 'trang_thai_cong_bo']);
+
+        $soPhongSanSangCongBo = $this->getSoPhongSanSangCongBo();
+
+        // 1. Chế độ Xem Danh Sách Ca Thi (Khi người dùng click chọn 1 Kỳ thi hoặc dùng thanh tìm kiếm)
+        if ($selectedKyThi || $isSearching) {
+            $q = LichThi::with(['khoa', 'deThi', 'dangKys'])
+                ->withCount([
+                    'dangKys as tong_sinh_vien' => function ($query) {
+                        $query->whereIn('trang_thai', ['da_duyet']);
+                    },
+                    'dangKys as tong_bai_thi' => function ($query) {
+                        $query->whereHas('baiThi');
+                    },
+                    'dangKys as tong_bai_da_cham' => function ($query) {
+                        $query->whereHas('baiThi', function ($b) {
+                            $b->where('cham_xong', true)->orWhere('trang_thai', 'da_cong_bo');
+                        });
+                    },
+                ]);
+
+            if ($selectedKyThi) {
+                $q->where('ten_ky_thi', $selectedKyThi);
+            }
+
+            if ($request->filled('ngay_thi')) {
+                $q->whereDate('ngay_thi', $request->ngay_thi);
+            }
+
+            if ($request->filled('phong_thi')) {
+                $q->where('phong_thi', 'like', '%' . trim($request->phong_thi) . '%');
+            }
+
+            if ($request->filled('q')) {
+                $keyword = '%' . trim($request->q) . '%';
+                $q->where(function ($query) use ($keyword) {
+                    $query->where('ten_ky_thi', 'like', $keyword)
+                        ->orWhere('phong_thi', 'like', $keyword)
+                        ->orWhereHas('deThi', fn ($d) => $d->where('ten_de', 'like', $keyword));
+                });
+            }
+
+            if ($request->filled('trang_thai_cong_bo')) {
+                if ($request->trang_thai_cong_bo === 'da_cong_bo') {
+                    $q->where('trang_thai_cong_bo', 'da_cong_bo');
+                } elseif ($request->trang_thai_cong_bo === 'chua_cong_bo') {
+                    $q->where('trang_thai_cong_bo', '!=', 'da_cong_bo');
+                }
+            }
+
+            $lichThis = $q->orderByDesc('ngay_thi')
+                ->orderBy('gio_bat_dau')
+                ->paginate(12)
+                ->withQueryString();
+
+            return view('admin.ketqua.index', [
+                'mode' => 'list',
+                'selectedKyThi' => $selectedKyThi,
+                'lichThis' => $lichThis,
+                'soPhongSanSangCongBo' => $soPhongSanSangCongBo,
             ]);
-
-        // Bộ lọc ngày thi
-        if ($request->filled('ngay_thi')) {
-            $q->whereDate('ngay_thi', $request->ngay_thi);
         }
 
-        // Bộ lọc ca thi
-        if ($request->filled('ma_ca_thi')) {
-            $q->where('ma_ca_thi', 'like', '%' . trim($request->ma_ca_thi) . '%');
-        }
+        // 2. Chế độ Xem Thẻ Kỳ Thi (Cards Overview)
+        $allLichThis = LichThi::with(['khoa', 'deThi', 'dangKys.baiThi'])->get();
 
-        // Bộ lọc phòng thi
-        if ($request->filled('phong_thi')) {
-            $q->where('phong_thi', 'like', '%' . trim($request->phong_thi) . '%');
-        }
+        $grouped = $allLichThis->groupBy(function ($lt) {
+            return trim($lt->ten_ky_thi ?: 'Kỳ thi chưa đặt tên');
+        });
 
-        // Tìm kiếm theo từ khóa bài thi / kỳ thi
         if ($request->filled('q')) {
-            $keyword = '%' . trim($request->q) . '%';
-            $q->where(function ($query) use ($keyword) {
-                $query->where('ten_ky_thi', 'like', $keyword)
-                    ->orWhere('ma_ca_thi', 'like', $keyword)
-                    ->orWhere('phong_thi', 'like', $keyword)
-                    ->orWhereHas('deThi', fn ($d) => $d->where('ten_de', 'like', $keyword));
+            $keyword = mb_strtolower(trim($request->q));
+            $grouped = $grouped->filter(function ($items, $tenKyThi) use ($keyword) {
+                return str_contains(mb_strtolower($tenKyThi), $keyword);
             });
         }
 
-        // Bộ lọc trạng thái công bố
-        if ($request->filled('trang_thai_cong_bo')) {
-            if ($request->trang_thai_cong_bo === 'da_cong_bo') {
-                $q->where('trang_thai_cong_bo', 'da_cong_bo');
-            } elseif ($request->trang_thai_cong_bo === 'chua_cong_bo') {
-                $q->where('trang_thai_cong_bo', '!=', 'da_cong_bo');
+        $kyThiCards = $grouped->map(function ($items, $tenKyThi) {
+            $soCaThi = $items->count();
+            $loaiChungChi = $items->first()->loai_chung_chi ?? '';
+            $tenKhoa = optional($items->first()->khoa)->ten_khoa ?? 'Khảo thí';
+
+            $tongSinhVien = 0;
+            $tongBaiThi = 0;
+            $tongBaiDaCham = 0;
+            $soPhongDaCongBo = 0;
+            $soPhongSanSang = 0;
+
+            $ngayThiList = $items->pluck('ngay_thi')
+                ->filter()
+                ->map(fn ($d) => $d->format('d/m/Y'))
+                ->unique()
+                ->values();
+
+            foreach ($items as $lt) {
+                $svCount = $lt->dangKys->where('trang_thai', 'da_duyet')->count();
+                $tongSinhVien += $svCount;
+
+                $bais = $lt->dangKys->pluck('baiThi')->filter();
+                $tongBaiThi += $bais->count();
+
+                $daChamCount = $bais->filter(fn ($b) => $b->cham_xong || $b->trang_thai === 'da_cong_bo')->count();
+                $tongBaiDaCham += $daChamCount;
+
+                if ($lt->trang_thai_cong_bo === 'da_cong_bo') {
+                    $soPhongDaCongBo++;
+                } elseif ($bais->count() > 0 && $bais->count() === $daChamCount) {
+                    $soPhongSanSang++;
+                }
             }
-        }
 
-        $lichThis = $q->orderByDesc('ngay_thi')
-            ->orderByDesc('gio_bat_dau')
-            ->paginate(12)
-            ->withQueryString();
+            $phanTramCham = $tongBaiThi > 0 ? round(($tongBaiDaCham / $tongBaiThi) * 100) : 0;
 
-        // Đếm số phòng thi đã chấm hoàn thành 100% bài thi nhưng chưa công bố kết quả
-        $soPhongSanSangCongBo = LichThi::where('trang_thai_cong_bo', '!=', 'da_cong_bo')
+            $trangThaiOverall = 'chua_cong_bo';
+            if ($soCaThi > 0 && $soPhongDaCongBo === $soCaThi) {
+                $trangThaiOverall = 'da_cong_bo';
+            } elseif ($soPhongSanSang > 0 || ($tongBaiThi > 0 && $phanTramCham === 100)) {
+                $trangThaiOverall = 'san_sang_cong_bo';
+            }
+
+            return (object) [
+                'ten_ky_thi' => $tenKyThi,
+                'loai_chung_chi' => $loaiChungChi,
+                'ten_khoa' => $tenKhoa,
+                'so_ca_thi' => $soCaThi,
+                'tong_sinh_vien' => $tongSinhVien,
+                'tong_bai_thi' => $tongBaiThi,
+                'tong_bai_da_cham' => $tongBaiDaCham,
+                'phan_tram_cham' => $phanTramCham,
+                'trang_thai_overall' => $trangThaiOverall,
+                'ngay_thi_str' => $ngayThiList->implode(', '),
+            ];
+        })->values();
+
+        return view('admin.ketqua.index', [
+            'mode' => 'cards',
+            'kyThiCards' => $kyThiCards,
+            'soPhongSanSangCongBo' => $soPhongSanSangCongBo,
+        ]);
+    }
+
+    /**
+     * Helper đếm số phòng đã hoàn thành 100% bài chấm chưa công bố
+     */
+    private function getSoPhongSanSangCongBo(): int
+    {
+        return LichThi::where('trang_thai_cong_bo', '!=', 'da_cong_bo')
             ->whereHas('dangKys.baiThi')
             ->get()
             ->filter(function ($lt) {
@@ -89,8 +179,6 @@ class KetQuaController extends Controller
                 return $tong === $daCham;
             })
             ->count();
-
-        return view('admin.ketqua.index', compact('lichThis', 'soPhongSanSangCongBo'));
     }
 
     /**
@@ -237,7 +325,7 @@ class KetQuaController extends Controller
 
                         Mail::raw(
                             "Kính gửi bạn {$sinhVien->name},\n\n" .
-                            "Kết quả bài thi cho kỳ thi \"{$tenKyThi}\" (Phòng thi: {$lichthi->phong_thi}, Ca thi: {$lichthi->ma_ca_thi}) đã được công bố chính thức.\n\n" .
+                            "Kết quả bài thi cho kỳ thi \"{$tenKyThi}\" (Phòng thi: {$lichthi->phong_thi}, Giờ thi: " . (\Carbon\Carbon::parse($lichthi->gio_bat_dau)->format('H:i')) . ") đã được công bố chính thức.\n\n" .
                             "- Tổng điểm: {$diem}\n" .
                             "- Kết quả: {$ketQua}\n" .
                             "- Thời gian công bố: {$now->format('H:i d/m/Y')}\n\n" .
@@ -252,7 +340,7 @@ class KetQuaController extends Controller
                         // Gửi thông báo hệ thống (Database notification)
                         $sinhVien->notify(new \App\Notifications\ThongBaoHeThong(
                             "Đã có kết quả thi: {$tenKyThi}",
-                            "Phòng {$lichthi->phong_thi} ({$lichthi->ma_ca_thi}) đã công bố kết quả. Điểm của bạn: {$diem} ({$ketQua}).",
+                            "Phòng {$lichthi->phong_thi} (" . (\Carbon\Carbon::parse($lichthi->gio_bat_dau)->format('H:i')) . ") đã công bố kết quả. Điểm của bạn: {$diem} ({$ketQua}).",
                             route('sinhvien.ketqua.show', $bai),
                             $bai->is_dat ? 'thanh_cong' : 'thong_tin',
                             'bi-award'

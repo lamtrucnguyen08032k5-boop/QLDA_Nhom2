@@ -25,7 +25,7 @@
                     <span class="mx-2">•</span>
                     <span><i class="bi bi-door-closed me-1"></i>Phòng: <strong>{{ $lichThi->phong_thi }}</strong></span>
                     <span class="mx-2">•</span>
-                    <span><i class="bi bi-clock me-1"></i>Ca: <strong>{{ $lichThi->ma_ca_thi }}</strong></span>
+                    <span><i class="bi bi-clock me-1"></i>Giờ thi: <strong>{{ \Carbon\Carbon::parse($lichThi->gio_bat_dau)->format('H:i') }}</strong></span>
                 @endif
             </div>
         </div>
@@ -74,7 +74,7 @@
                     </div>
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">Ca thi / Phòng</label>
-                        <span class="badge bg-light text-dark border me-1">{{ $lichThi?->ma_ca_thi ?? '—' }}</span>
+                        <span class="badge bg-light text-dark border me-1">{{ $lichThi?->gio_bat_dau ? \Carbon\Carbon::parse($lichThi->gio_bat_dau)->format('H:i') : '—' }}</span>
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ $lichThi?->phong_thi ?? '—' }}</span>
                     </div>
                     <div class="col-sm-6">

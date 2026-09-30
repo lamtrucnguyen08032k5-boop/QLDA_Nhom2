@@ -128,7 +128,7 @@
                     <div class="row g-2 small">
                         <div class="col-md-6"><strong>Bài thi:</strong> {{ $lichthi->ten_ky_thi }}</div>
                         <div class="col-md-3"><strong>Ngày thi:</strong> {{ $lichthi->ngay_thi->format('d/m/Y') }}</div>
-                        <div class="col-md-3"><strong>Ca thi:</strong> {{ $lichthi->ma_ca_thi }}</div>
+                        <div class="col-md-3"><strong>Giờ thi:</strong> {{ $lichthi->gio_bat_dau ? \Carbon\Carbon::parse($lichthi->gio_bat_dau)->format('H:i') : '—' }}</div>
                         <div class="col-md-6"><strong>Địa điểm/phòng thi:</strong> {{ $lichthi->phong_thi }}</div>
                         <div class="col-md-6"><strong>Lệ phí:</strong> {{ number_format($lichthi->le_phi) }}đ</div>
                     </div>

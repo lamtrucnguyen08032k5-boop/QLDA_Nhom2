@@ -36,7 +36,7 @@ class ToChucThiController extends Controller
 
         $lichthi->update(['trang_thai' => 'dang_thi', 'de_thi_id' => $deThi->id]);
 
-        return back()->with('status', "Đã bắt đầu ca thi. Sinh viên có thể nhập mã ca thi {$lichthi->ma_ca_thi} để vào thi.");
+        return back()->with('status', "Đã bắt đầu ca thi phòng {$lichthi->phong_thi} lúc " . \Carbon\Carbon::parse($lichthi->gio_bat_dau)->format('H:i') . ". Sinh viên có thể vào thi.");
     }
 
     public function ketThuc(LichThi $lichthi)

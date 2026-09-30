@@ -3,7 +3,7 @@
 @section('content')
 <h5 class="mb-3">Các ca thi sẵn sàng tổ chức</h5>
 <table class="table table-bordered bg-white">
-    <thead><tr><th>Kỳ thi</th><th>Khoa</th><th>Ngày thi</th><th>Phòng</th><th>Mã ca thi</th><th>Số TS đã duyệt</th><th>Trạng thái</th><th></th></tr></thead>
+    <thead><tr><th>Kỳ thi</th><th>Khoa</th><th>Ngày thi</th><th>Phòng</th><th>Giờ thi</th><th>Số TS đã duyệt</th><th>Trạng thái</th><th></th></tr></thead>
     <tbody>
     @foreach ($lichThis as $lt)
         <tr>
@@ -11,7 +11,7 @@
             <td>{{ $lt->khoa->ten_khoa }}</td>
             <td>{{ $lt->ngay_thi->format('d/m/Y') }}</td>
             <td>{{ $lt->phong_thi }}</td>
-            <td><code>{{ $lt->ma_ca_thi }}</code></td>
+            <td><span class="fw-semibold text-primary"><i class="bi bi-clock me-1"></i>{{ $lt->gio_bat_dau ? \Carbon\Carbon::parse($lt->gio_bat_dau)->format('H:i') : '—' }}</span></td>
             <td>{{ $lt->so_thi_sinh }}</td>
             <td><span class="badge text-bg-secondary">{{ $lt->trang_thai }}</span></td>
             <td class="text-nowrap">

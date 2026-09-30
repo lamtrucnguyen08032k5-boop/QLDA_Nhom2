@@ -25,8 +25,8 @@
                     <td style="padding:6px 0;font-weight:bold;color:#0d2b57;">{{ $dangKy->ma_dang_ky }}</td>
                 </tr>
                 <tr>
-                    <td style="padding:6px 0;color:#64748b;">Kỳ thi / Ca thi:</td>
-                    <td style="padding:6px 0;font-weight:bold;">{{ $dangKy->lichThi->ten_ky_thi }} ({{ $dangKy->lichThi->ma_ca_thi }})</td>
+                    <td style="padding:6px 0;color:#64748b;">Kỳ thi:</td>
+                    <td style="padding:6px 0;font-weight:bold;">{{ $dangKy->lichThi->ten_ky_thi }}</td>
                 </tr>
                 <tr>
                     <td style="padding:6px 0;color:#64748b;">Thời gian thi:</td>

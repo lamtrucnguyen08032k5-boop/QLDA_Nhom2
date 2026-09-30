@@ -320,7 +320,7 @@ class LichThiController extends Controller
         foreach ($removedCaThis as $removed) {
             if ($removed->dangKys()->exists()) {
                 return back()->withErrors([
-                    'general' => "Không thể xóa ca thi '{$removed->ma_ca_thi}' (Phòng {$removed->phong_thi}) do đã có thí sinh đăng ký dự thi.",
+                    'general' => "Không thể xóa lịch thi phòng '{$removed->phong_thi}' (" . \Carbon\Carbon::parse($removed->gio_bat_dau)->format('H:i') . ") do đã có thí sinh đăng ký dự thi.",
                 ])->withInput();
             }
         }
@@ -552,7 +552,7 @@ class LichThiController extends Controller
                     $dbEnd = $dbStart->copy()->addMinutes($dbCa->thoi_gian_thi_phut);
 
                     if ($slot['start']->lt($dbEnd) && $slot['end']->gt($dbStart)) {
-                        $errors["db_conflict_{$idx}"] = "Phòng thi không khả dụng: Phòng '{$slot['phong_thi']}' đã được gán cho ca thi '{$dbCa->ma_ca_thi}' ({$dbStart->format('H:i')} - {$dbEnd->format('H:i')}) thuộc kỳ thi '{$dbCa->ten_ky_thi}' vào ngày " . Carbon::parse($slot['ngay_thi'])->format('d/m/Y') . '. Vui lòng chọn phòng thi khác hoặc điều chỉnh thời gian ca thi.';
+                        $errors["db_conflict_{$idx}"] = "Phòng thi không khả dụng: Phòng '{$slot['phong_thi']}' đã được gán cho ca thi lúc {$dbStart->format('H:i')} - {$dbEnd->format('H:i')} thuộc kỳ thi '{$dbCa->ten_ky_thi}' vào ngày " . Carbon::parse($slot['ngay_thi'])->format('d/m/Y') . '. Vui lòng chọn phòng thi khác hoặc điều chỉnh thời gian ca thi.';
                     }
                 } catch (\Throwable) {
                     // ignore format errors in existing data

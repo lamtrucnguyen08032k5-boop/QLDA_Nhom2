@@ -186,7 +186,7 @@
                     <div class="row g-2 small">
                         <div class="col-md-6"><strong>Bài thi:</strong> {{ $dangky->lichThi->ten_ky_thi }}</div>
                         <div class="col-md-3"><strong>Ngày thi:</strong> {{ optional($dangky->lichThi->ngay_thi)->format('d/m/Y') }}</div>
-                        <div class="col-md-3"><strong>Ca thi:</strong> {{ $dangky->lichThi->ma_ca_thi }}</div>
+                        <div class="col-md-3"><strong>Giờ thi:</strong> {{ $dangky->lichThi->gio_bat_dau ? \Carbon\Carbon::parse($dangky->lichThi->gio_bat_dau)->format('H:i') : '—' }}</div>
                         <div class="col-md-6"><strong>Địa điểm/phòng thi:</strong> {{ $dangky->lichThi->phong_thi }}</div>
                         <div class="col-md-6"><strong>Lệ phí:</strong> {{ number_format($dangky->so_tien) }}đ</div>
                     </div>

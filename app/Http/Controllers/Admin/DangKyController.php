@@ -14,33 +14,101 @@ use Illuminate\Support\Facades\Mail;
 // M4 - Đăng ký thi (Duyệt đăng ký dự thi Admin)
 class DangKyController extends Controller
 {
-    // Hiển thị danh sách các lịch thi đã có sinh viên đăng ký
+    // Hiển thị danh sách các lịch thi đã có sinh viên đăng ký (Hỗ trợ Thẻ Kỳ thi & Danh sách lịch thi)
     public function danhSachLichThi(Request $request)
     {
-        $q = LichThi::with('khoa')
-            ->withCount([
-                'dangKys as so_luong_dang_ky',
-                'dangKys as so_ho_so_cho_duyet' => function ($query) {
-                    $query->whereIn('trang_thai', ['cho_duyet', 'da_bo_sung']);
-                },
+        $selectedKyThi = $request->get('ky_thi');
+        $isSearching = $request->anyFilled(['q', 'trang_thai']);
+
+        // 1. Chế độ Xem Danh Sách Lịch Thi (Khi chọn 1 kỳ thi hoặc dùng bộ lọc)
+        if ($selectedKyThi || $isSearching) {
+            $q = LichThi::with('khoa')
+                ->withCount([
+                    'dangKys as so_luong_dang_ky',
+                    'dangKys as so_ho_so_cho_duyet' => function ($query) {
+                        $query->whereIn('trang_thai', ['cho_duyet', 'da_bo_sung']);
+                    },
+                ]);
+
+            if ($selectedKyThi) {
+                $q->where('ten_ky_thi', $selectedKyThi);
+            }
+
+            if ($request->filled('q')) {
+                $keyword = '%' . trim($request->q) . '%';
+                $q->where(function ($sub) use ($keyword) {
+                    $sub->where('ten_ky_thi', 'like', $keyword)
+                        ->orWhere('phong_thi', 'like', $keyword);
+                });
+            }
+
+            if ($request->filled('trang_thai')) {
+                $q->where('trang_thai', $request->trang_thai);
+            }
+
+            $lichThis = $q->orderByDesc('ngay_thi')->paginate(15)->withQueryString();
+
+            return view('admin.dangky.danhsach', [
+                'mode' => 'list',
+                'selectedKyThi' => $selectedKyThi,
+                'lichThis' => $lichThis,
             ]);
+        }
+
+        // 2. Chế độ Xem Thẻ Kỳ Thi (Cards Overview)
+        $allLichThis = LichThi::with(['khoa', 'dangKys'])->get();
+
+        $grouped = $allLichThis->groupBy(function ($lt) {
+            return trim($lt->ten_ky_thi ?: 'Kỳ thi chưa đặt tên');
+        });
 
         if ($request->filled('q')) {
-            $keyword = '%' . $request->q . '%';
-            $q->where(function ($sub) use ($keyword) {
-                $sub->where('ten_ky_thi', 'like', $keyword)
-                    ->orWhere('ma_ca_thi', 'like', $keyword)
-                    ->orWhere('phong_thi', 'like', $keyword);
+            $keyword = mb_strtolower(trim($request->q));
+            $grouped = $grouped->filter(function ($items, $tenKyThi) use ($keyword) {
+                return str_contains(mb_strtolower($tenKyThi), $keyword);
             });
         }
 
-        if ($request->filled('trang_thai')) {
-            $q->where('trang_thai', $request->trang_thai);
-        }
+        $kyThiCards = $grouped->map(function ($items, $tenKyThi) {
+            $soCaThi = $items->count();
+            $loaiChungChi = $items->first()->loai_chung_chi ?? '';
+            $tenKhoa = optional($items->first()->khoa)->ten_khoa ?? 'Khảo thí';
 
-        $lichThis = $q->orderByDesc('ngay_thi')->paginate(15)->withQueryString();
+            $tongDangKy = 0;
+            $tongChiTieu = 0;
+            $soHoSoChoDuyet = 0;
 
-        return view('admin.dangky.danhsach', compact('lichThis'));
+            $ngayThiList = $items->pluck('ngay_thi')
+                ->filter()
+                ->map(fn ($d) => $d->format('d/m/Y'))
+                ->unique()
+                ->values();
+
+            foreach ($items as $lt) {
+                $tongChiTieu += $lt->so_luong_toi_da;
+                $dkCount = $lt->dangKys->count();
+                $tongDangKy += $dkCount;
+
+                $choDuyet = $lt->dangKys->whereIn('trang_thai', ['cho_duyet', 'da_bo_sung'])->count();
+                $soHoSoChoDuyet += $choDuyet;
+            }
+
+            return (object) [
+                'ten_ky_thi' => $tenKyThi,
+                'loai_chung_chi' => $loaiChungChi,
+                'ten_khoa' => $tenKhoa,
+                'so_ca_thi' => $soCaThi,
+                'tong_dang_ky' => $tongDangKy,
+                'tong_chi_tieu' => $tongChiTieu,
+                'so_ho_so_cho_duyet' => $soHoSoChoDuyet,
+                'ngay_thi_str' => $ngayThiList->implode(', '),
+            ];
+        })->values();
+
+        return view('admin.dangky.danhsach', [
+            'mode' => 'cards',
+            'kyThiCards' => $kyThiCards,
+        ]);
     }
 
     // Hiển thị danh sách sinh viên đăng ký của 1 lịch thi cụ thể

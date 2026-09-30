@@ -110,11 +110,8 @@
                         <span class="fw-semibold text-dark">{{ optional($lichThi->ngay_thi)->format('d/m/Y') }}</span>
                     </div>
                     <div class="col-sm-6">
-                        <label class="text-muted small d-block">Ca thi</label>
-                        <span class="badge bg-light text-dark border">{{ $lichThi->ma_ca_thi }}</span>
-                        @if($lichThi->gio_bat_dau)
-                            <span class="small text-muted ms-1">({{ $lichThi->gio_bat_dau }} - {{ $lichThi->gio_ket_thuc }})</span>
-                        @endif
+                        <label class="text-muted small d-block">Giờ thi</label>
+                        <span class="fw-semibold text-primary"><i class="bi bi-clock me-1"></i>{{ $lichThi->gio_bat_dau ? \Carbon\Carbon::parse($lichThi->gio_bat_dau)->format('H:i') : '—' }} - {{ $lichThi->gio_ket_thuc }}</span>
                     </div>
                     <div class="col-sm-6">
                         <label class="text-muted small d-block">Phòng thi</label>

@@ -14,7 +14,7 @@
             <div class="text-muted small">
                 <span><i class="bi bi-calendar3 me-1"></i>Ngày thi: <strong>{{ optional($lichthi->ngay_thi)->format('d/m/Y') }}</strong></span>
                 <span class="mx-2">•</span>
-                <span><i class="bi bi-clock me-1"></i>Ca thi: <strong>{{ $lichthi->ma_ca_thi }}</strong> ({{ $lichthi->gio_bat_dau }})</span>
+                <span><i class="bi bi-clock me-1"></i>Giờ thi: <strong>{{ \Carbon\Carbon::parse($lichthi->gio_bat_dau)->format('H:i') }}</strong></span>
                 @if($lichthi->deThi)
                     <span class="mx-2">•</span>
                     <span><i class="bi bi-file-earmark-text me-1"></i>Đề thi: <strong>{{ $lichthi->deThi->ten_de }}</strong></span>
@@ -333,7 +333,7 @@
                     Bạn có chắc chắn muốn trả kết quả thi cho toàn bộ sinh viên trong phòng thi này không?
                 </p>
                 <div class="bg-light p-3 rounded-2 small text-muted">
-                    <div><i class="bi bi-info-circle me-1"></i><strong>Thông tin phòng thi:</strong> {{ $lichthi->phong_thi }} (Ca: {{ $lichthi->ma_ca_thi }})</div>
+                    <div><i class="bi bi-info-circle me-1"></i><strong>Thông tin phòng thi:</strong> {{ $lichthi->phong_thi }} (Giờ thi: {{ \Carbon\Carbon::parse($lichthi->gio_bat_dau)->format('H:i') }})</div>
                     <div><i class="bi bi-calendar-event me-1"></i><strong>Kỳ thi:</strong> {{ $lichthi->ten_ky_thi }}</div>
                     <div><i class="bi bi-people me-1"></i><strong>Số lượng bài thi công bố:</strong> {{ $tongSoBai }} bài thi</div>
                     <hr class="my-2">

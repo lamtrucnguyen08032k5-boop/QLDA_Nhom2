@@ -225,7 +225,6 @@
                                 <table class="table table-bordered table-sm align-middle mb-0">
                                     <thead class="table-light small text-secondary">
                                         <tr>
-                                            <th style="width: 120px;">Mã ca thi</th>
                                             <th style="width: 140px;">Giờ bắt đầu <span class="text-danger">*</span></th>
                                             <th style="width: 170px;">Thời lượng thi <span class="text-danger">*</span></th>
                                             <th style="width: 150px;">Khung giờ (Dự kiến)</th>
@@ -241,9 +240,7 @@
                                         @foreach ($caThis as $ctIdx => $ctData)
                                             <tr class="ca-thi-row" data-ca-id="{{ $ctData['id'] ?? '' }}">
                                                 <input type="hidden" name="lich_this[{{ $ltIdx }}][ca_this][{{ $ctIdx }}][id]" value="{{ $ctData['id'] ?? '' }}" class="ct-id-input">
-                                                <td>
-                                                    <input type="text" name="lich_this[{{ $ltIdx }}][ca_this][{{ $ctIdx }}][ma_ca_thi]" class="form-control form-control-sm font-monospace text-center" placeholder="Tự sinh" value="{{ $ctData['ma_ca_thi'] ?? '' }}" title="Để trống nếu muốn hệ thống tự sinh mã">
-                                                </td>
+                                                <input type="hidden" name="lich_this[{{ $ltIdx }}][ca_this][{{ $ctIdx }}][ma_ca_thi]" value="{{ $ctData['ma_ca_thi'] ?? '' }}">
                                                 <td>
                                                     <input type="time" name="lich_this[{{ $ltIdx }}][ca_this][{{ $ctIdx }}][gio_bat_dau]" class="form-control form-control-sm ct-start fw-semibold" value="{{ $ctData['gio_bat_dau'] ?? '08:00' }}" required>
                                                     <div class="d-flex gap-1 mt-1">
@@ -532,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     if (a.startMins < dbEndMins && a.endMins > dbStartMins) {
                         conflictingInputMap.add(a.roomInput);
-                        const msg = `Phòng "<strong>${a.phongThi}</strong>" ngày ${formatDateDisplay(a.ngayThi)} (${a.startTimeStr} - ${a.endTimeStr}) đã được gán cho ca thi "${dbSlot.ma_ca_thi}" (${dbSlot.gio_bat_dau} - ${minutesToTime(dbEndMins)}) thuộc kỳ thi "${dbSlot.ten_ky_thi}".`;
+                        const msg = `Phòng "<strong>${a.phongThi}</strong>" ngày ${formatDateDisplay(a.ngayThi)} (${a.startTimeStr} - ${a.endTimeStr}) đã được gán cho ca thi lúc ${dbSlot.gio_bat_dau} - ${minutesToTime(dbEndMins)} thuộc kỳ thi "${dbSlot.ten_ky_thi}".`;
                         if (!conflictMessages.includes(msg)) {
                             conflictMessages.push(msg);
                         }
@@ -620,9 +617,7 @@ document.addEventListener('DOMContentLoaded', function () {
             caThisHtml += `
             <tr class="ca-thi-row" data-ca-id="">
                 <input type="hidden" name="lich_this[${ltIdx}][ca_this][${ctIdx}][id]" value="" class="ct-id-input">
-                <td>
-                    <input type="text" name="lich_this[${ltIdx}][ca_this][${ctIdx}][ma_ca_thi]" class="form-control form-control-sm font-monospace text-center" placeholder="Tự sinh" value="${ct.ma_ca_thi || ''}">
-                </td>
+                <input type="hidden" name="lich_this[${ltIdx}][ca_this][${ctIdx}][ma_ca_thi]" value="${ct.ma_ca_thi || ''}">
                 <td>
                     <input type="time" name="lich_this[${ltIdx}][ca_this][${ctIdx}][gio_bat_dau]" class="form-control form-control-sm ct-start fw-semibold" value="${ct.gio_bat_dau || '08:00'}" required>
                     <div class="d-flex gap-1 mt-1">
@@ -900,9 +895,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const rowHtml = `
             <tr class="ca-thi-row" data-ca-id="">
                 <input type="hidden" name="lich_this[${ltIdx}][ca_this][${ctIdx}][id]" value="" class="ct-id-input">
-                <td>
-                    <input type="text" name="lich_this[${ltIdx}][ca_this][${ctIdx}][ma_ca_thi]" class="form-control form-control-sm font-monospace text-center" placeholder="Tự sinh">
-                </td>
+                <input type="hidden" name="lich_this[${ltIdx}][ca_this][${ctIdx}][ma_ca_thi]" value="">
                 <td>
                     <input type="time" name="lich_this[${ltIdx}][ca_this][${ctIdx}][gio_bat_dau]" class="form-control form-control-sm ct-start fw-semibold" value="${nextStart}" required>
                     <div class="d-flex gap-1 mt-1">
@@ -981,9 +974,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const cloneHtml = `
             <tr class="ca-thi-row" data-ca-id="">
                 <input type="hidden" name="lich_this[${ltIdx}][ca_this][${ctIdx}][id]" value="" class="ct-id-input">
-                <td>
-                    <input type="text" name="lich_this[${ltIdx}][ca_this][${ctIdx}][ma_ca_thi]" class="form-control form-control-sm font-monospace text-center" placeholder="Tự sinh">
-                </td>
+                <input type="hidden" name="lich_this[${ltIdx}][ca_this][${ctIdx}][ma_ca_thi]" value="">
                 <td>
                     <input type="time" name="lich_this[${ltIdx}][ca_this][${ctIdx}][gio_bat_dau]" class="form-control form-control-sm ct-start fw-semibold" value="${nextStartTime}" required>
                     <div class="d-flex gap-1 mt-1">

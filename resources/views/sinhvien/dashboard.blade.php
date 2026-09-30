@@ -8,7 +8,7 @@
         <form method="GET" action="{{ route('sinhvien.dashboard') }}" class="row g-2 align-items-end">
             <div class="col-md-3">
                 <label class="form-label small text-muted mb-1">Tìm kiếm</label>
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Tên bài thi, phòng thi, mã ca..." value="{{ request('q') }}">
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="Tên bài thi, phòng thi..." value="{{ request('q') }}">
             </div>
             <div class="col-md-2">
                 <label class="form-label small text-muted mb-1">Loại chứng chỉ</label>
@@ -81,10 +81,6 @@
                             <tr>
                                 <td class="text-muted ps-0" style="width: 100px;">📅 Ngày thi:</td>
                                 <td class="fw-semibold">{{ optional($lt->ngay_thi)->format('d/m/Y') }}</td>
-                            </tr>
-                            <tr>
-                                <td class="text-muted ps-0">🔑 Ca thi:</td>
-                                <td><code class="text-dark">{{ $lt->ma_ca_thi }}</code></td>
                             </tr>
                             <tr>
                                 <td class="text-muted ps-0">⏰ Giờ thi:</td>

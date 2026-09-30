@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 :root {
     --hvnh-blue-900: #0d2b57;
     --hvnh-blue-700: #133b6b;
@@ -7,18 +9,46 @@
     --hvnh-white: #ffffff;
     --hvnh-gray-100: #f4f7fb;
     --hvnh-gray-300: #dbe4f0;
+    --hvnh-radius: 0.65rem;
+    --hvnh-shadow-sm: 0 1px 3px rgba(13, 43, 87, 0.06), 0 1px 2px rgba(13, 43, 87, 0.04);
+    --hvnh-shadow: 0 4px 12px rgba(13, 43, 87, 0.08), 0 2px 6px rgba(13, 43, 87, 0.04);
+    --hvnh-shadow-lg: 0 10px 25px rgba(13, 43, 87, 0.1), 0 6px 10px rgba(13, 43, 87, 0.05);
+    --hvnh-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-body { background: var(--hvnh-gray-100); color: #1f2937; }
+/* ---- Base Typography ---- */
+body {
+    background: var(--hvnh-gray-100);
+    color: #1f2937;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+h1, h2, h3, h4, h5, h6 { font-weight: 700; letter-spacing: -0.01em; }
+.small, small { font-size: 0.85rem; }
+
+/* ---- Smooth Selection ---- */
+::selection { background: var(--hvnh-blue-100); color: var(--hvnh-blue-900); }
 
 /* ---- Buttons ---- */
+.btn {
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: var(--hvnh-transition);
+    letter-spacing: 0.01em;
+}
+.btn:active { transform: scale(0.97); }
 .btn-primary {
     background-color: var(--hvnh-blue-900);
     border-color: var(--hvnh-blue-900);
+    box-shadow: 0 1px 3px rgba(13, 43, 87, 0.2);
 }
 .btn-primary:hover, .btn-primary:focus {
     background-color: var(--hvnh-blue-700);
     border-color: var(--hvnh-blue-700);
+    box-shadow: 0 4px 8px rgba(13, 43, 87, 0.25);
+    transform: translateY(-1px);
 }
 .btn-outline-primary {
     color: var(--hvnh-blue-900);
@@ -27,6 +57,7 @@ body { background: var(--hvnh-gray-100); color: #1f2937; }
 .btn-outline-primary:hover {
     background-color: var(--hvnh-blue-900);
     border-color: var(--hvnh-blue-900);
+    transform: translateY(-1px);
 }
 .btn-accent {
     background-color: var(--hvnh-orange);
@@ -35,21 +66,78 @@ body { background: var(--hvnh-gray-100); color: #1f2937; }
 }
 .btn-accent:hover { background-color: #d98e0e; border-color: #d98e0e; color: #fff; }
 
+.btn-sm { border-radius: 0.45rem; font-size: 0.82rem; }
+
 /* ---- Text / links ---- */
 .text-primary { color: var(--hvnh-blue-900) !important; }
-a { color: var(--hvnh-blue-500); }
+a { color: var(--hvnh-blue-500); transition: color 0.15s ease; }
+a:hover { color: var(--hvnh-blue-900); }
 
 /* ---- Cards ---- */
-.card { border: 1px solid var(--hvnh-gray-300); border-radius: .6rem; }
+.card {
+    border: 1px solid rgba(13, 43, 87, 0.08);
+    border-radius: var(--hvnh-radius);
+    box-shadow: var(--hvnh-shadow-sm);
+    transition: var(--hvnh-transition);
+    background: #fff;
+}
+.card:hover { box-shadow: var(--hvnh-shadow); }
+.card-header {
+    font-weight: 600;
+    border-bottom: 1px solid rgba(13, 43, 87, 0.06);
+}
 .card-header-blue {
     background: var(--hvnh-blue-900);
     color: #fff;
-    border-radius: .6rem .6rem 0 0;
+    border-radius: var(--hvnh-radius) var(--hvnh-radius) 0 0;
     padding: .85rem 1.25rem;
     font-weight: 600;
 }
 
-/* ---- Tables: key-value style (giống ảnh xác nhận thông tin) ---- */
+/* Card hover effect for clickable cards */
+.card-hover {
+    cursor: pointer;
+    transition: var(--hvnh-transition);
+}
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--hvnh-shadow-lg);
+    border-color: var(--hvnh-blue-500) !important;
+}
+.card-hover:active {
+    transform: translateY(-1px);
+}
+
+/* ---- Tables ---- */
+.table { font-size: 0.875rem; }
+.table > thead > tr > th {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    border-bottom-width: 2px;
+    border-color: var(--hvnh-gray-300);
+    padding: 0.85rem 0.75rem;
+    white-space: nowrap;
+}
+.table-light > tr > th,
+thead.table-light > tr > th {
+    background: #f8fafc !important;
+}
+.table > tbody > tr {
+    transition: background-color 0.15s ease;
+}
+.table > tbody > tr > td {
+    padding: 0.8rem 0.75rem;
+    vertical-align: middle;
+    border-color: #f0f3f7;
+}
+.table-hover > tbody > tr:hover {
+    background-color: var(--hvnh-blue-100) !important;
+}
+
+/* Key-Value tables */
 .table-kv th {
     background: var(--hvnh-blue-900);
     color: #fff;
@@ -59,7 +147,12 @@ a { color: var(--hvnh-blue-500); }
 }
 .table-kv td, .table-kv th { padding: .75rem 1rem; border-color: var(--hvnh-gray-300); }
 
-/* ---- Badges trạng thái ---- */
+/* ---- Badges ---- */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    border-radius: 0.35rem;
+}
 .badge-cho-duyet { background: #fde8c8; color: #92610a; }
 .badge-da-duyet { background: #d6f5e3; color: #14764a; }
 .badge-tu-choi { background: #fbdada; color: #a12626; }
@@ -68,6 +161,34 @@ a { color: var(--hvnh-blue-500); }
 .badge-cho-thanh-toan { background: #fde8c8; color: #92610a; }
 .badge-da-thanh-toan { background: #d6f5e3; color: #14764a; }
 .badge-thanh-toan-that-bai { background: #fbdada; color: #a12626; }
+
+/* ---- Forms ---- */
+.form-control, .form-select {
+    border-radius: 0.45rem;
+    border-color: #d1d9e6;
+    font-size: 0.875rem;
+    transition: var(--hvnh-transition);
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--hvnh-blue-500);
+    box-shadow: 0 0 0 3px rgba(26, 90, 168, 0.12);
+}
+.form-label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.82rem;
+}
+.input-group-text {
+    border-radius: 0.45rem;
+    border-color: #d1d9e6;
+    font-size: 0.875rem;
+}
+
+/* ---- Alerts ---- */
+.alert {
+    border-radius: var(--hvnh-radius);
+    font-size: 0.875rem;
+}
 
 /* ---- Step wizard (Đăng ký dự thi) ---- */
 .hvnh-steps { display:flex; list-style:none; padding:0; margin:0 0 1.5rem; }
@@ -80,21 +201,84 @@ a { color: var(--hvnh-blue-500); }
 .hvnh-steps li.done { background: var(--hvnh-blue-500); color:#fff; }
 
 /* ---- Sidebar (Admin/Khoa/Giảng viên) ---- */
-.sidebar { min-height: 100vh; background: var(--hvnh-blue-900); }
-.sidebar a { color: #cfe0f5; text-decoration: none; display: block; padding: .6rem 1rem; border-radius: .375rem; }
-.sidebar a.active, .sidebar a:hover { background: var(--hvnh-blue-700); color: #fff; }
-.sidebar .brand { color: #fff; font-weight: 700; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,.15); margin-bottom: .5rem; display:flex; align-items:center; gap:.6rem;}
+.sidebar {
+    min-height: 100vh;
+    background: linear-gradient(180deg, var(--hvnh-blue-900) 0%, #091e3e 100%);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+.sidebar a {
+    color: #b8cfeb;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: .55rem 1rem;
+    border-radius: .4rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: var(--hvnh-transition);
+    margin-bottom: 1px;
+}
+.sidebar a.active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--hvnh-orange);
+}
+.sidebar a:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    padding-left: 1.15rem;
+}
+.sidebar .brand {
+    color: #fff;
+    font-weight: 700;
+    padding: 1.1rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: .75rem;
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+}
 
-/* ---- Sinh viên top navbar (giao diện kiểu cổng thông tin công khai) ---- */
+/* ---- Top Navbar (Admin) ---- */
+.navbar { box-shadow: var(--hvnh-shadow-sm); }
+
+/* ---- Sinh viên top navbar ---- */
 .hvnh-topbar { background: var(--hvnh-blue-900); color:#dfe9fa; font-size:.8rem; padding:.35rem 0; }
 .hvnh-topbar a { color:#dfe9fa; text-decoration:none; }
-.hvnh-navbar { background:#fff; border-bottom:1px solid var(--hvnh-gray-300); }
+.hvnh-navbar { background:#fff; border-bottom:1px solid var(--hvnh-gray-300); box-shadow: var(--hvnh-shadow-sm); }
 .hvnh-navbar .brand-text { font-weight:800; color: var(--hvnh-blue-900); line-height:1.1; }
 .hvnh-navbar .brand-sub { font-size:.7rem; color:#64748b; letter-spacing:.03em; }
-.hvnh-navbar .nav-link { color: var(--hvnh-blue-900); font-weight:600; }
-.hvnh-navbar .nav-link.active, .hvnh-navbar .nav-link:hover { color: var(--hvnh-orange); }
+.hvnh-navbar .nav-link {
+    color: var(--hvnh-blue-900);
+    font-weight: 600;
+    transition: color 0.15s ease;
+    position: relative;
+}
+.hvnh-navbar .nav-link.active,
+.hvnh-navbar .nav-link:hover { color: var(--hvnh-orange); }
+.hvnh-navbar .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--hvnh-orange);
+    border-radius: 2px;
+}
 .hvnh-page-title { background: var(--hvnh-blue-100); border-bottom:1px solid var(--hvnh-gray-300); padding: 1.1rem 0; margin-bottom:1.5rem; }
 .hvnh-page-title h1 { font-size:1.3rem; font-weight:700; color: var(--hvnh-blue-900); margin:0; }
+
+/* ---- Footer ---- */
 .hvnh-footer { background: #20266e; color:#cbd5e1; padding:3rem 0 1.5rem; margin-top:3.5rem; font-size:.88rem; }
 .hvnh-footer .footer-title { color: #ffffff; font-weight: 700; font-size: 0.92rem; letter-spacing: .04em; margin-bottom: 1.1rem; text-transform: uppercase; }
 .hvnh-footer ul li { margin-bottom: 0.6rem; }
@@ -104,7 +288,7 @@ a { color: var(--hvnh-blue-500); }
 .scroll-to-top-btn { position: fixed; bottom: 20px; right: 20px; width: 38px; height: 38px; border-radius: 50%; background: rgba(13, 43, 87, 0.85); color: #fff; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 16px; transition: all .2s; z-index: 999; }
 .scroll-to-top-btn:hover { background: var(--hvnh-orange); color: #fff; transform: translateY(-2px); }
 
-/* ---- Khung xem trước ảnh hồ sơ đăng ký dự thi ---- */
+/* ---- Khung xem trước ảnh hồ sơ ---- */
 .hvnh-anh-preview {
     width: 100%;
     max-width: 220px;
@@ -122,7 +306,7 @@ a { color: var(--hvnh-blue-500); }
 .hvnh-anh-preview img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: .35rem; }
 .hvnh-anh-preview .placeholder-text { font-size: .78rem; color: #94a3b8; text-align: center; padding: 0 .5rem; }
 
-/* ---- Custom Pagination matching system theme ---- */
+/* ---- Custom Pagination ---- */
 .custom-page-btn {
     display: inline-flex;
     align-items: center;
@@ -135,9 +319,9 @@ a { color: var(--hvnh-blue-500); }
     background-color: #ffffff;
     color: #4b5563;
     text-decoration: none;
-    font-size: 0.88rem;
+    font-size: 0.82rem;
     font-weight: 500;
-    transition: all 0.15s ease-in-out;
+    transition: var(--hvnh-transition);
 }
 .custom-page-btn:hover:not(.disabled) {
     border-color: var(--hvnh-blue-500);
@@ -146,10 +330,10 @@ a { color: var(--hvnh-blue-500); }
 }
 .custom-page-btn.active {
     border-color: var(--hvnh-blue-900);
-    color: var(--hvnh-blue-900);
-    font-weight: 700;
-    background-color: #ffffff;
-    box-shadow: 0 0 0 1px var(--hvnh-blue-900);
+    color: #fff;
+    font-weight: 600;
+    background-color: var(--hvnh-blue-900);
+    box-shadow: 0 2px 4px rgba(13, 43, 87, 0.2);
 }
 .custom-page-btn.disabled {
     color: #9ca3af;
@@ -161,7 +345,7 @@ a { color: var(--hvnh-blue-500); }
     border-radius: 6px;
     border-color: #dbe4f0;
     color: #1f2937;
-    font-size: 0.88rem;
+    font-size: 0.82rem;
     padding-top: 0.28rem;
     padding-bottom: 0.28rem;
     padding-left: 0.6rem;
@@ -172,3 +356,51 @@ a { color: var(--hvnh-blue-500); }
     border-color: var(--hvnh-blue-900);
     box-shadow: 0 0 0 0.2rem rgba(13, 43, 87, 0.15);
 }
+
+/* ---- Progress bars ---- */
+.progress {
+    border-radius: 100px;
+    background: #e9edf3;
+    overflow: hidden;
+}
+.progress-bar {
+    border-radius: 100px;
+    transition: width 0.4s ease;
+}
+
+/* ---- Modals ---- */
+.modal-content {
+    border-radius: var(--hvnh-radius);
+    border: none;
+    box-shadow: var(--hvnh-shadow-lg);
+}
+.modal-header { border-radius: var(--hvnh-radius) var(--hvnh-radius) 0 0; }
+
+/* ---- Line clamp utility ---- */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ---- Dropdown ---- */
+.dropdown-menu {
+    border-radius: var(--hvnh-radius);
+    box-shadow: var(--hvnh-shadow-lg);
+    border: 1px solid rgba(13, 43, 87, 0.08);
+}
+.dropdown-item { font-size: 0.875rem; transition: background 0.1s; }
+
+/* ---- Main content area ---- */
+main.flex-grow-1 > .container-fluid,
+main.flex-grow-1 > div > .container-fluid {
+    padding: 1.5rem;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .sidebar { width: 220px !important; }
+    .card-body { padding: 1rem !important; }
+}
+

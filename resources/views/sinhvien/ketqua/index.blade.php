@@ -82,7 +82,7 @@
                             <th class="ps-3" style="width: 25%;">Tên bài thi / Kỳ thi</th>
                             <th style="width: 14%;">Mã bài thi</th>
                             <th style="width: 11%;">Ngày thi</th>
-                            <th style="width: 10%;">Ca thi</th>
+                            <th style="width: 10%;">Giờ thi</th>
                             <th style="width: 10%;">Phòng thi</th>
                             <th class="text-center" style="width: 8%;">Điểm thi</th>
                             <th class="text-center" style="width: 10%;">Kết quả</th>
@@ -109,7 +109,7 @@
                                 <div>{{ optional($lt?->ngay_thi)->format('d/m/Y') }}</div>
                             </td>
                             <td>
-                                <span class="badge bg-light text-dark border">{{ $lt?->ma_ca_thi }}</span>
+                                <span class="fw-semibold text-primary"><i class="bi bi-clock me-1"></i>{{ $lt?->gio_bat_dau ? \Carbon\Carbon::parse($lt->gio_bat_dau)->format('H:i') : '—' }}</span>
                             </td>
                             <td>
                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle">

@@ -52,8 +52,7 @@
     <div class="card-header-blue">Thông tin đăng ký</div>
     <table class="table table-kv mb-0">
         <tr><th>Bài thi</th><td>{{ $lichthi->ten_ky_thi }}</td></tr>
-        <tr><th>Thời gian thi</th><td>{{ $lichthi->ngay_thi->format('d/m/Y') }} — {{ $lichthi->gio_bat_dau }}</td></tr>
-        <tr><th>Ca thi</th><td>{{ $lichthi->ma_ca_thi }}</td></tr>
+        <tr><th>Thời gian thi</th><td>{{ $lichthi->ngay_thi->format('d/m/Y') }} — {{ $lichthi->gio_bat_dau ? \Carbon\Carbon::parse($lichthi->gio_bat_dau)->format('H:i') : '' }}</td></tr>
         <tr><th>Địa điểm/phòng thi</th><td>{{ $lichthi->phong_thi }}</td></tr>
         <tr><th>Lệ phí</th><td class="fw-bold text-primary">{{ number_format($lichthi->le_phi) }}đ</td></tr>
     </table>

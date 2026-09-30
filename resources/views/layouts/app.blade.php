@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Hệ thống quản lý thi chứng chỉ CNTT & Tiếng Anh - Học viện Ngân hàng">
     <title>@yield('title', 'Hệ thống thi chứng chỉ HVNH')</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{{ asset('css/theme.css') }}" rel="stylesheet">
-    <style> body { min-height: 100vh; } </style>
 </head>
 <body>
 <div class="d-flex">
@@ -26,7 +28,6 @@
                 <a href="{{ route('admin.dangky.danhsach') }}" class="{{ request()->routeIs('admin.dangky.*') ? 'active' : '' }}">Danh sách đăng ký thi</a>
                 <a href="{{ route('admin.dethi.index') }}" class="{{ request()->routeIs('admin.dethi.*') ? 'active' : '' }}">Kho đề thi</a>
                 <a href="{{ route('admin.tochuc.index') }}" class="{{ request()->routeIs('admin.tochuc.*') ? 'active' : '' }}">Tổ chức thi</a>
-                <a href="{{ route('admin.chamthi.tiendo') }}" class="{{ request()->routeIs('admin.chamthi.*') ? 'active' : '' }}">Tiến độ chấm</a>
                 <a href="{{ route('admin.ketqua.index') }}" class="{{ request()->routeIs('admin.ketqua.*') ? 'active' : '' }}">Kết quả thi</a>
                 <a href="{{ route('admin.phuckhao.index') }}" class="{{ request()->routeIs('admin.phuckhao.*') ? 'active' : '' }}">Phúc khảo</a>
                 <a href="{{ route('admin.chungnhan.index') }}" class="{{ request()->routeIs('admin.chungnhan.*') ? 'active' : '' }}">Chứng nhận</a>

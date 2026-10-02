@@ -13,6 +13,11 @@ class Khoa extends Model
         return $this->hasMany(User::class)->where('role', 'giangvien');
     }
 
+    public function sinhViens()
+    {
+        return $this->hasMany(User::class)->where('role', 'sinhvien');
+    }
+
     public function taiKhoanKhoa()
     {
         return $this->hasOne(User::class)->where('role', 'khoa');

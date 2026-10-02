@@ -12,8 +12,8 @@
     <link href="{{ asset('css/theme.css') }}" rel="stylesheet">
 </head>
 <body>
-<div class="d-flex">
-    <nav class="sidebar" style="width:250px;">
+<div class="d-flex w-100 min-vh-100">
+    <nav class="sidebar" style="width:250px; min-width:250px; max-width:250px; flex-shrink:0;">
         <div class="brand">
             <img src="{{ asset('images/logo.png') }}" alt="Logo" width="30" height="35">
             <span>HVNH Khảo thí</span>
@@ -31,6 +31,7 @@
                 <a href="{{ route('admin.ketqua.index') }}" class="{{ request()->routeIs('admin.ketqua.*') ? 'active' : '' }}">Kết quả thi</a>
                 <a href="{{ route('admin.phuckhao.index') }}" class="{{ request()->routeIs('admin.phuckhao.*') ? 'active' : '' }}">Phúc khảo</a>
                 <a href="{{ route('admin.chungnhan.index') }}" class="{{ request()->routeIs('admin.chungnhan.*') ? 'active' : '' }}">Chứng nhận</a>
+                <a href="{{ route('admin.thongke.index') }}" class="{{ request()->routeIs('admin.thongke.*') ? 'active' : '' }}">Thống kê</a>
             @elseif ($u?->role === 'khoa')
                 <a href="{{ route('khoa.dashboard') }}" class="{{ request()->routeIs('khoa.dashboard') ? 'active' : '' }}">Tổng quan</a>
                 <a href="{{ route('khoa.giangvien.index') }}" class="{{ request()->routeIs('khoa.giangvien.*') ? 'active' : '' }}">Giảng viên</a>
@@ -51,7 +52,7 @@
             @endif
         </div>
     </nav>
-    <main class="flex-grow-1">
+    <main class="flex-grow-1" style="min-width: 0; overflow-x: hidden;">
         <nav class="navbar navbar-light bg-white border-bottom px-4">
             <span class="fw-semibold text-primary">@yield('title', 'Trang chủ')</span>
             <div class="d-flex align-items-center gap-3">
@@ -140,6 +141,7 @@
     </main>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@include('layouts.notifications')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         document.addEventListener('click', function (e) {
@@ -167,5 +169,7 @@
         });
     });
 </script>
+@yield('scripts')
+@stack('scripts')
 </body>
 </html>

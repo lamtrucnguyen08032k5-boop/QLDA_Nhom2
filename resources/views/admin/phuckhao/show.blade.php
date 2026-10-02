@@ -114,7 +114,7 @@
                             <label class="form-label fw-semibold">Ghi chú duyệt Admin:</label>
                             <textarea name="ly_do_duyet" class="form-control" rows="2" placeholder="Ghi chú khi duyệt..."></textarea>
                         </div>
-                        <button type="submit" class="btn btn-success w-100" onclick="return confirm('Xác nhận phê duyệt kết quả phúc khảo?')">
+                        <button type="submit" class="btn btn-success w-100" data-confirm="Xác nhận phê duyệt kết quả phúc khảo?">
                             <i class="bi bi-check2-all me-1"></i> Duyệt kết quả phúc khảo (HĐ19)
                         </button>
                     </form>

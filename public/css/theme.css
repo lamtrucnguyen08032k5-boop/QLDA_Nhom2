@@ -202,6 +202,10 @@ thead.table-light > tr > th {
 
 /* ---- Sidebar (Admin/Khoa/Giảng viên) ---- */
 .sidebar {
+    width: 250px;
+    min-width: 250px;
+    max-width: 250px;
+    flex-shrink: 0;
     min-height: 100vh;
     background: linear-gradient(180deg, var(--hvnh-blue-900) 0%, #091e3e 100%);
     position: sticky;

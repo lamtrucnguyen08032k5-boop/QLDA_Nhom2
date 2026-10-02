@@ -102,18 +102,18 @@
                                     {!! $gv->active ? '<span class="badge text-bg-success">Hoạt động</span>' : '<span class="badge text-bg-secondary">Đã khóa</span>' !!}
                                 </td>
                                 <td class="text-center">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button type="button" class="btn btn-outline-primary py-0 px-2" data-bs-toggle="modal" data-bs-target="#editGvModalShow{{ $gv->id }}" title="Chỉnh sửa Giảng viên">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-                                        <form method="POST" action="{{ route('admin.khoa.giangvien.destroy', [$khoa, $gv]) }}" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa giảng viên &quot;{{ $gv->name }}&quot;?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger py-0 px-2" style="border-top-left-radius:0; border-bottom-left-radius:0;" title="Xóa Giảng viên">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
+                                    <div class="d-flex align-items-center justify-content-center gap-3">
+                                         <button type="button" class="btn btn-link p-0 text-secondary border-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editGvModalShow{{ $gv->id }}" title="Chỉnh sửa Giảng viên" style="font-size: 1.15rem; line-height: 1; transition: color 0.15s;" onmouseover="this.style.color='#0d6efd'" onmouseout="this.style.color=''">
+                                             <i class="bi bi-pencil"></i>
+                                         </button>
+                                         <form method="POST" action="{{ route('admin.khoa.giangvien.destroy', [$khoa, $gv]) }}" class="d-inline m-0" data-confirm="Bạn có chắc muốn xóa giảng viên &quot;{{ $gv->name }}&quot;?">
+                                             @csrf
+                                             @method('DELETE')
+                                             <button type="submit" class="btn btn-link p-0 text-secondary border-0 text-decoration-none" title="Xóa Giảng viên" style="font-size: 1.15rem; line-height: 1; transition: color 0.15s;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color=''">
+                                                 <i class="bi bi-trash3"></i>
+                                             </button>
+                                         </form>
+                                     </div>
 
                                     {{-- Modal Chỉnh sửa Giảng viên --}}
                                     <div class="modal fade text-start" id="editGvModalShow{{ $gv->id }}" tabindex="-1" aria-labelledby="editGvModalShowLabel{{ $gv->id }}" aria-hidden="true">

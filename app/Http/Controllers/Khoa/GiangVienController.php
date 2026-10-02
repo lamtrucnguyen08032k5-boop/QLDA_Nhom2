@@ -13,10 +13,27 @@ use Illuminate\Support\Str;
 // Khoa có thể xem/quản lý danh sách Giảng viên trong khoa mình (hỗ trợ thêm cho Admin)
 class GiangVienController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $khoa = Auth::user()->khoa;
-        $giangViens = $khoa->giangViens()->orderBy('name')->get();
+        $q = $khoa->giangViens();
+
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $q->where(function ($query) use ($s) {
+                $query->where('ma_so', 'like', "%{$s}%")
+                    ->orWhere('name', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%");
+            });
+        }
+
+        $perPage = (int) $request->input('per_page', 20);
+        if (!in_array($perPage, [10, 20, 50, 100])) {
+            $perPage = 20;
+        }
+
+        $giangViens = $q->orderBy('name')->paginate($perPage)->withQueryString();
+
         return view('khoa.giangvien', compact('khoa', 'giangViens'));
     }
 

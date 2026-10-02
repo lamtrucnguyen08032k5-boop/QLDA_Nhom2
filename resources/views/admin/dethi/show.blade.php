@@ -63,7 +63,7 @@
                             <td>{{ $c->dap_an_dung }}</td>
                             <td>{{ $c->diem }}</td>
                             <td>
-                                <form method="POST" action="{{ route('admin.dethi.cauhoi.destroy', [$dethi, $c]) }}" onsubmit="return confirm('Xoá câu hỏi này?')">
+                                <form method="POST" action="{{ route('admin.dethi.cauhoi.destroy', [$dethi, $c]) }}" data-confirm="Xoá câu hỏi này?">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-sm btn-outline-danger">Xoá</button>
                                 </form>

@@ -315,7 +315,7 @@
             </span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('admin.lichthi.index') }}" class="btn btn-outline-secondary px-3" onclick="return confirmCancel(event);">
+            <a href="{{ route('admin.lichthi.index') }}" class="btn btn-outline-secondary px-3" data-confirm="Bạn có chắc chắn muốn hủy thao tác? Các thông tin đang nhập sẽ không được lưu.">
                 Hủy bỏ
             </a>
             <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm" id="btnSubmitForm">
@@ -791,42 +791,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Tạo nhanh 2 môn CNTT & Tiếng Anh
     document.getElementById('btnQuickPresetBoth').addEventListener('click', function () {
-        if (!confirm('Hệ thống sẽ thêm 2 lịch thi mẫu (CNTT & Tiếng Anh). Bạn có muốn tiếp tục?')) {
-            return;
-        }
+        AppNotify.confirm('Hệ thống sẽ thêm 2 lịch thi mẫu (CNTT & Tiếng Anh). Bạn có muốn tiếp tục?', function () {
+            const container = document.getElementById('lichThiContainer');
+            const defaultDate1 = new Date();
+            defaultDate1.setDate(defaultDate1.getDate() + 7);
+            const dateStr1 = defaultDate1.toISOString().split('T')[0];
 
-        const container = document.getElementById('lichThiContainer');
-        const defaultDate1 = new Date();
-        defaultDate1.setDate(defaultDate1.getDate() + 7);
-        const dateStr1 = defaultDate1.toISOString().split('T')[0];
+            const defaultHan1 = new Date();
+            defaultHan1.setDate(defaultHan1.getDate() + 2);
+            const hanStr1 = defaultHan1.toISOString().split('T')[0] + 'T23:59';
 
-        const defaultHan1 = new Date();
-        defaultHan1.setDate(defaultHan1.getDate() + 2);
-        const hanStr1 = defaultHan1.toISOString().split('T')[0] + 'T23:59';
+            const defaultDate2 = new Date();
+            defaultDate2.setDate(defaultDate2.getDate() + 8);
+            const dateStr2 = defaultDate2.toISOString().split('T')[0];
 
-        const defaultDate2 = new Date();
-        defaultDate2.setDate(defaultDate2.getDate() + 8);
-        const dateStr2 = defaultDate2.toISOString().split('T')[0];
+            const defaultHan2 = new Date();
+            defaultHan2.setDate(defaultHan2.getDate() + 3);
+            const hanStr2 = defaultHan2.toISOString().split('T')[0] + 'T23:59';
 
-        const defaultHan2 = new Date();
-        defaultHan2.setDate(defaultHan2.getDate() + 3);
-        const hanStr2 = defaultHan2.toISOString().split('T')[0] + 'T23:59';
+            const html1 = createLichThiHtml(nextLtIndex++, 'cntt', dateStr1, hanStr1, 200000, [
+                { gio_bat_dau: '08:00', thoi_gian_thi_phut: 60, phong_thi: 'Phòng Máy 101 - Tòa A', so_luong_toi_da: 40 },
+                { gio_bat_dau: '09:30', thoi_gian_thi_phut: 60, phong_thi: 'Phòng Máy 101 - Tòa A', so_luong_toi_da: 40 }
+            ]);
 
-        const html1 = createLichThiHtml(nextLtIndex++, 'cntt', dateStr1, hanStr1, 200000, [
-            { gio_bat_dau: '08:00', thoi_gian_thi_phut: 60, phong_thi: 'Phòng Máy 101 - Tòa A', so_luong_toi_da: 40 },
-            { gio_bat_dau: '09:30', thoi_gian_thi_phut: 60, phong_thi: 'Phòng Máy 101 - Tòa A', so_luong_toi_da: 40 }
-        ]);
+            const html2 = createLichThiHtml(nextLtIndex++, 'tienganh', dateStr2, hanStr2, 250000, [
+                { gio_bat_dau: '08:00', thoi_gian_thi_phut: 90, phong_thi: 'Hội trường A1', so_luong_toi_da: 50 },
+                { gio_bat_dau: '10:00', thoi_gian_thi_phut: 90, phong_thi: 'Hội trường A1', so_luong_toi_da: 50 }
+            ]);
 
-        const html2 = createLichThiHtml(nextLtIndex++, 'tienganh', dateStr2, hanStr2, 250000, [
-            { gio_bat_dau: '08:00', thoi_gian_thi_phut: 90, phong_thi: 'Hội trường A1', so_luong_toi_da: 50 },
-            { gio_bat_dau: '10:00', thoi_gian_thi_phut: 90, phong_thi: 'Hội trường A1', so_luong_toi_da: 50 }
-        ]);
-
-        container.insertAdjacentHTML('beforeend', html1);
-        container.insertAdjacentHTML('beforeend', html2);
-        updateAllLtNumbers();
-        updateAllEndTimes();
-        checkAllRoomConflicts();
+            container.insertAdjacentHTML('beforeend', html1);
+            container.insertAdjacentHTML('beforeend', html2);
+            updateAllLtNumbers();
+            updateAllEndTimes();
+            checkAllRoomConflicts();
+            AppNotify.success('Đã thêm 2 lịch thi mẫu thành công.');
+        });
     });
 
     // Click events delegation (Thêm ca, Clone ca, Xóa ca, Clone Lịch thi, Xóa Lịch thi, Preset chip, Auto Hạn)
@@ -1081,11 +1080,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (removeLtBtn) {
             const container = document.getElementById('lichThiContainer');
             if (container.querySelectorAll('.lich-thi-card').length > 1) {
-                if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch thi của môn này?')) {
+                AppNotify.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch thi của môn này?', function () {
                     removeLtBtn.closest('.lich-thi-card').remove();
                     updateAllLtNumbers();
                     checkAllRoomConflicts();
-                }
+                    AppNotify.success('Đã xóa môn thi khỏi danh sách.');
+                });
             }
             return;
         }
@@ -1102,7 +1102,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     alertBox.classList.remove('d-none');
                     alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
-                alert('Không thể lưu do có phòng thi bị trùng lịch hoặc giờ thi bị xung đột. Vui lòng kiểm tra các cảnh báo màu đỏ và điều chỉnh lại!');
+                AppNotify.alert('Không thể lưu do có phòng thi bị trùng lịch hoặc giờ thi bị xung đột. Vui lòng kiểm tra các cảnh báo màu đỏ và điều chỉnh lại!', 'Trùng lịch phòng thi', 'error');
             }
         });
     });
@@ -1115,13 +1115,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
-
-function confirmCancel(e) {
-    if (!confirm('Bạn có chắc chắn muốn hủy thao tác? Các thông tin đang nhập sẽ không được lưu.')) {
-        e.preventDefault();
-        return false;
-    }
-    return true;
-}
 </script>
 

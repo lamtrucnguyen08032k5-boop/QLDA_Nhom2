@@ -25,7 +25,7 @@
             @endif
         </div></div>
     @endforeach
-    <button class="btn btn-primary" onclick="return confirm('Bạn có chắc chắn muốn nộp bài?')">Nộp bài</button>
+    <button type="submit" class="btn btn-primary" data-confirm="Bạn có chắc chắn muốn nộp bài?">Nộp bài</button>
 </form>
 @endsection
 

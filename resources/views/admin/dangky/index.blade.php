@@ -694,6 +694,9 @@
 
     <script>
     function confirmHoTroBoSung_{{ $dk->id }}(e) {
+        var form = e.target;
+        if (form.dataset.confirmed) return true;
+
         var txtReason = document.getElementById('ly_do_bo_sung_qua_han_{{ $dk->id }}');
         var alertBox = document.getElementById('hoTroBoSungAlert_{{ $dk->id }}');
 
@@ -712,12 +715,12 @@
 
         if (alertBox) alertBox.style.display = 'none';
 
-        var ok = confirm('Bạn có chắc chắn muốn bổ sung hồ sơ thay cho sinh viên này không?');
-        if (!ok) {
-            e.preventDefault();
-            return false;
-        }
-        return true;
+        e.preventDefault();
+        AppNotify.confirm('Bạn có chắc chắn muốn bổ sung hồ sơ thay cho sinh viên này không?', function() {
+            form.dataset.confirmed = 'true';
+            form.submit();
+        });
+        return false;
     }
     </script>
 

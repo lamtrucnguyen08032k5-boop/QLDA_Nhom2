@@ -82,7 +82,7 @@
                             <label class="form-label fw-semibold">Ghi chú khi cấp:</label>
                             <textarea name="ghi_chu" class="form-control" rows="2" placeholder="Nhập ghi chú cấp..."></textarea>
                         </div>
-                        <button type="submit" class="btn btn-success w-100" onclick="return confirm('Xác nhận duyệt cấp chứng nhận cho sinh viên?')">
+                        <button type="submit" class="btn btn-success w-100" data-confirm="Xác nhận duyệt cấp chứng nhận cho sinh viên?">
                             <i class="bi bi-award me-1"></i> Cấp chứng nhận
                         </button>
                     </form>

@@ -96,7 +96,7 @@
                         @endif
 
                         @if ($dk->trang_thai !== 'da_huy' && $dk->trang_thai_thanh_toan !== 'da_thanh_toan')
-                            <form method="POST" action="{{ route('sinhvien.dangky.huy', $dk) }}" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn huỷ đăng ký này không?')">
+                            <form method="POST" action="{{ route('sinhvien.dangky.huy', $dk) }}" class="d-inline" data-confirm="Bạn có chắc chắn muốn huỷ đăng ký này không?">
                                 @csrf
                                 <button class="btn btn-sm btn-outline-danger ms-1">Huỷ</button>
                             </form>

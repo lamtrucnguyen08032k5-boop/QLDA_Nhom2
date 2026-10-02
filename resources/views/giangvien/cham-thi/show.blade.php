@@ -135,7 +135,7 @@
             <button type="submit" name="action" value="nhap" class="btn btn-outline-primary px-4">
                 <i class="bi bi-save me-1"></i> Lưu nháp
             </button>
-            <button type="submit" name="action" value="gui" class="btn btn-primary px-4" onclick="return confirm('Bạn có chắc chắn muốn gửi kết quả chấm bài này?')">
+            <button type="submit" name="action" value="gui" class="btn btn-primary px-4" data-confirm="Bạn có chắc chắn muốn gửi kết quả chấm bài này?">
                 <i class="bi bi-send me-1"></i> Gửi kết quả chấm
             </button>
         </div>

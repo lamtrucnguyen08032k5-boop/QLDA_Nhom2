@@ -129,7 +129,7 @@
                     </button>
                 @elseif($isGV1)
                     @if($baithi->ly_do_thong_nhat)
-                        <button type="submit" name="action" value="xac_nhan" class="btn btn-success px-4" onclick="return confirm('Xác nhận kết quả thống nhất điểm tự luận để chốt bài thi (HĐ24)?')">
+                        <button type="submit" name="action" value="xac_nhan" class="btn btn-success px-4" data-confirm="Xác nhận kết quả thống nhất điểm tự luận để chốt bài thi (HĐ24)?">
                             <i class="bi bi-check2-all me-1"></i> GV1 Xác nhận kết quả (Chốt điểm HĐ24)
                         </button>
                     @else

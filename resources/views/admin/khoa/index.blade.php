@@ -1,15 +1,55 @@
 @extends('layouts.app')
 @section('title', 'Quản lý Khoa')
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">Danh sách Khoa</h5>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <h5 class="mb-0 fw-bold text-primary">Danh sách Khoa</h5>
+        <small class="text-muted">Quản lý các Khoa và tài khoản đại diện đơn vị</small>
+    </div>
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createKhoaModal">
-            <i class="bi bi-plus-lg me-1"></i>Thêm mới Khoa
-        </button>
         <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#importKhoaModal">
             <i class="bi bi-file-earmark-arrow-up me-1"></i>Import Khoa
         </button>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createKhoaModal">
+            <i class="bi bi-plus-lg me-1"></i>Thêm mới Khoa
+        </button>
+    </div>
+</div>
+
+{{-- Thanh Tìm kiếm & Lọc Khoa --}}
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body p-3 bg-light rounded-3">
+        <form method="GET" action="{{ route('admin.khoa.index') }}" class="row g-2 align-items-end">
+            <div class="col-md-7">
+                <label class="form-label small fw-semibold text-secondary mb-1">Tìm kiếm Khoa:</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input name="search" class="form-control border-start-0" placeholder="Nhập mã khoa, tên khoa, email..." value="{{ request('search') }}">
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-secondary mb-1">Trạng thái:</label>
+                <select name="trang_thai" class="form-select form-select-sm">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="1" {{ request('trang_thai') === '1' ? 'selected' : '' }}>Hoạt động</option>
+                    <option value="0" {{ request('trang_thai') === '0' ? 'selected' : '' }}>Ngừng hoạt động</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                        <i class="bi bi-funnel me-1"></i>Tìm kiếm
+                    </button>
+                    @if(request()->filled('search') || request()->filled('trang_thai'))
+                        <a href="{{ route('admin.khoa.index') }}" class="btn btn-outline-secondary btn-sm" title="Bỏ lọc">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    @endif
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -44,15 +84,15 @@
                             {!! $khoa->active ? '<span class="badge text-bg-success">Hoạt động</span>' : '<span class="badge text-bg-secondary">Ngừng hoạt động</span>' !!}
                         </td>
                         <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ route('admin.khoa.edit', $khoa) }}" class="btn btn-outline-primary" title="Chỉnh sửa Khoa & Giảng viên">
-                                    <i class="bi bi-pencil-square"></i>
+                            <div class="d-flex align-items-center justify-content-center gap-3">
+                                <a href="{{ route('admin.khoa.edit', $khoa) }}" class="text-secondary text-decoration-none" title="Chỉnh sửa Khoa & Giảng viên" style="font-size: 1.15rem; transition: color 0.15s;" onmouseover="this.style.color='#0d6efd'" onmouseout="this.style.color=''">
+                                    <i class="bi bi-pencil"></i>
                                 </a>
-                                <form method="POST" action="{{ route('admin.khoa.destroy', $khoa) }}" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa Khoa &quot;{{ $khoa->ten_khoa }}&quot;?')">
+                                <form method="POST" action="{{ route('admin.khoa.destroy', $khoa) }}" class="d-inline m-0" data-confirm="Bạn có chắc chắn muốn xóa Khoa &quot;{{ $khoa->ten_khoa }}&quot;?">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger" style="border-top-left-radius: 0; border-bottom-left-radius: 0;" title="Xóa Khoa">
-                                        <i class="bi bi-trash"></i>
+                                    <button type="submit" class="btn btn-link p-0 text-secondary border-0 text-decoration-none" title="Xóa Khoa" style="font-size: 1.15rem; line-height: 1; transition: color 0.15s;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color=''">
+                                        <i class="bi bi-trash3"></i>
                                     </button>
                                 </form>
                             </div>

@@ -22,8 +22,23 @@ class KhoaController extends Controller
             $perPage = 20;
         }
 
-        $khoas = Khoa::withCount('giangViens')
-            ->orderBy('ten_khoa')
+        $q = Khoa::withCount('giangViens');
+
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $q->where(function ($query) use ($s) {
+                $query->where('ma_khoa', 'like', "%{$s}%")
+                    ->orWhere('ten_khoa', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%")
+                    ->orWhere('mo_ta', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('trang_thai')) {
+            $q->where('active', $request->trang_thai === '1');
+        }
+
+        $khoas = $q->orderBy('ten_khoa')
             ->paginate($perPage)
             ->withQueryString();
 
@@ -205,8 +220,22 @@ class KhoaController extends Controller
             $perPage = 20;
         }
 
-        $giangViens = $khoa->giangViens()
-            ->orderBy('name')
+        $q = $khoa->giangViens();
+
+        if ($request->filled('search_gv')) {
+            $s = trim($request->search_gv);
+            $q->where(function ($query) use ($s) {
+                $query->where('ma_so', 'like', "%{$s}%")
+                    ->orWhere('name', 'like', "%{$s}%")
+                    ->orWhere('email', 'like', "%{$s}%");
+            });
+        }
+
+        if ($request->filled('trang_thai_gv')) {
+            $q->where('active', $request->trang_thai_gv === '1');
+        }
+
+        $giangViens = $q->orderBy('name')
             ->paginate($perPage)
             ->withQueryString();
 

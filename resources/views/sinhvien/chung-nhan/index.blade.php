@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.sinhvien')
 @section('title', 'Chứng nhận của tôi')
 @section('content')
 <div class="card border-0 shadow-sm mb-4">

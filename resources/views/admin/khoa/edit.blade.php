@@ -62,20 +62,45 @@
 
 {{-- KHỐI 2 (Ở DƯỚI): QUẢN LÝ GIẢNG VIÊN THUỘC KHOA --}}
 <div class="card shadow-sm">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold text-success">
-            <i class="bi bi-people me-1"></i>2. Giảng viên thuộc Khoa
-        </h6>
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-light text-dark border">
-                Tổng số: <strong>{{ $giangViens->total() }}</strong> giảng viên
-            </span>
-            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createGvModal">
-                <i class="bi bi-plus-lg me-1"></i>Thêm Giảng viên
-            </button>
-            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#importGvModal">
-                <i class="bi bi-file-earmark-arrow-up me-1"></i>Import Giảng viên
-            </button>
+    <div class="card-header bg-white py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            {{-- Bên trái: Tiêu đề + Form tìm kiếm & Lọc Giảng viên --}}
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold text-success me-2 text-nowrap">
+                    <i class="bi bi-people me-1"></i>2. Giảng viên thuộc Khoa
+                </h6>
+                <form method="GET" action="{{ route('admin.khoa.edit', $khoa) }}" class="d-flex align-items-center gap-2 mb-0 flex-wrap">
+                    <div class="input-group input-group-sm" style="width: 240px;">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input name="search_gv" class="form-control" placeholder="Mã GV, họ tên, email..." value="{{ request('search_gv') }}">
+                    </div>
+
+                    <select name="trang_thai_gv" class="form-select form-select-sm" style="width: 140px;">
+                        <option value="">-- Trạng thái --</option>
+                        <option value="1" {{ request('trang_thai_gv') === '1' ? 'selected' : '' }}>Hoạt động</option>
+                        <option value="0" {{ request('trang_thai_gv') === '0' ? 'selected' : '' }}>Đã khóa</option>
+                    </select>
+
+                    <button type="submit" class="btn btn-primary btn-sm px-3">
+                        <i class="bi bi-funnel me-1"></i>Tìm
+                    </button>
+                    @if(request()->filled('search_gv') || request()->filled('trang_thai_gv'))
+                        <a href="{{ route('admin.khoa.edit', $khoa) }}" class="btn btn-outline-secondary btn-sm" title="Bỏ lọc">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    @endif
+                </form>
+            </div>
+
+            {{-- Bên phải: Nút Thêm & Import Giảng viên --}}
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createGvModal">
+                    <i class="bi bi-plus-lg me-1"></i>Thêm Giảng viên
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#importGvModal">
+                    <i class="bi bi-file-earmark-arrow-up me-1"></i>Import Giảng viên
+                </button>
+            </div>
         </div>
     </div>
     <div class="card-body">
@@ -104,15 +129,15 @@
                             {!! $gv->active ? '<span class="badge text-bg-success">Hoạt động</span>' : '<span class="badge text-bg-secondary">Đã khóa</span>' !!}
                         </td>
                         <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-primary py-0 px-2" data-bs-toggle="modal" data-bs-target="#editGvModal{{ $gv->id }}" title="Chỉnh sửa Giảng viên">
-                                    <i class="bi bi-pencil-square"></i>
+                            <div class="d-flex align-items-center justify-content-center gap-3">
+                                <button type="button" class="btn btn-link p-0 text-secondary border-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editGvModal{{ $gv->id }}" title="Chỉnh sửa Giảng viên" style="font-size: 1.15rem; line-height: 1; transition: color 0.15s;" onmouseover="this.style.color='#0d6efd'" onmouseout="this.style.color=''">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                                <form method="POST" action="{{ route('admin.khoa.giangvien.destroy', [$khoa, $gv]) }}" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa giảng viên &quot;{{ $gv->name }}&quot;?')">
+                                <form method="POST" action="{{ route('admin.khoa.giangvien.destroy', [$khoa, $gv]) }}" class="d-inline m-0" data-confirm="Bạn có chắc muốn xóa giảng viên &quot;{{ $gv->name }}&quot;?">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger py-0 px-2" style="border-top-left-radius:0; border-bottom-left-radius:0;" title="Xóa Giảng viên">
-                                        <i class="bi bi-trash"></i>
+                                    <button type="submit" class="btn btn-link p-0 text-secondary border-0 text-decoration-none" title="Xóa Giảng viên" style="font-size: 1.15rem; line-height: 1; transition: color 0.15s;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color=''">
+                                        <i class="bi bi-trash3"></i>
                                     </button>
                                 </form>
                             </div>

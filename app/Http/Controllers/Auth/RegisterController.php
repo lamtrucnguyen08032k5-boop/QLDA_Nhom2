@@ -121,6 +121,7 @@ class RegisterController extends Controller
             'name' => $hoTen,
             'email' => $row->email,
             'password' => Hash::make($request->password),
+            'khoa_id' => $sv ? $sv->khoa_id : null,
             'lop' => $lop,
             'khoa_hoc' => $khoaHoc,
             'email_verified_at' => now(),

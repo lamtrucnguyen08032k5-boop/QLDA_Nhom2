@@ -103,7 +103,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Kho email sinh viên hợp lệ (whitelist) để SV có thể tự đăng ký
     Route::get('sinh-vien', [SvWhitelistController::class, 'index'])->name('svwhitelist.index');
+    Route::get('sinh-vien/sample-csv', [SvWhitelistController::class, 'downloadSample'])->name('svwhitelist.sample');
     Route::post('sinh-vien', [SvWhitelistController::class, 'storeSingle'])->name('svwhitelist.store');
+    Route::put('sinh-vien/{sv}', [SvWhitelistController::class, 'update'])->name('svwhitelist.update');
     Route::post('sinh-vien/import', [SvWhitelistController::class, 'import'])->name('svwhitelist.import');
     Route::delete('sinh-vien/{sv}', [SvWhitelistController::class, 'destroy'])->name('svwhitelist.destroy');
 
@@ -160,6 +162,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('chung-nhan/{chungnhan}/tiep-nhan', [AdminChungNhanController::class, 'tiepNhan'])->name('chungnhan.tiep-nhan');
     Route::post('chung-nhan/{chungnhan}/cap', [AdminChungNhanController::class, 'capNhan'])->name('chungnhan.cap');
     Route::post('chung-nhan/{chungnhan}/tu-choi', [AdminChungNhanController::class, 'tuChoi'])->name('chungnhan.tuchoi');
+
+    // M10: Thống kê & Báo cáo tổng hợp
+    Route::get('thong-ke', [\App\Http\Controllers\Admin\ThongKeController::class, 'index'])->name('thongke.index');
 });
 
 /*

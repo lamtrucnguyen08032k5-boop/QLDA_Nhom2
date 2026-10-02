@@ -30,6 +30,11 @@ class User extends Authenticatable
         return $this->belongsTo(Khoa::class);
     }
 
+    public function dangKys()
+    {
+        return $this->hasMany(DangKy::class, 'sinh_vien_id');
+    }
+
     public function isAdmin(): bool { return $this->role === 'admin'; }
     public function isKhoa(): bool { return $this->role === 'khoa'; }
     public function isGiangVien(): bool { return $this->role === 'giangvien'; }

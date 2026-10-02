@@ -66,7 +66,7 @@
                     <label class="form-label fw-semibold">Nhận xét & Phản hồi cho sinh viên <span class="text-danger">*</span></label>
                     <textarea name="phan_hoi" class="form-control" rows="4" placeholder="Nhập lý do điều chỉnh hoặc lý do giữ nguyên điểm..." required>{{ old('phan_hoi', $phuckhao->phan_hoi) }}</textarea>
                 </div>
-                <button type="submit" class="btn btn-primary" onclick="return confirm('Xác nhận gửi kết quả chấm phúc khảo cho Admin duyệt?')">
+                <button type="submit" class="btn btn-primary" data-confirm="Xác nhận gửi kết quả chấm phúc khảo cho Admin duyệt?">
                     <i class="bi bi-send me-1"></i> Gửi kết quả cho Admin duyệt (HĐ16)
                 </button>
             </form>

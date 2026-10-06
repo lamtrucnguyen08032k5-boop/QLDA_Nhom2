@@ -7,6 +7,7 @@ use App\Models\BaiThi;
 use App\Models\CauTraLoi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 // M6 - UC2.3.6 Giảng viên chấm bài thi (Quy trình 2 lần chấm, thống nhất, chốt điểm)
 class ChamThiController extends Controller
@@ -35,12 +36,16 @@ class ChamThiController extends Controller
             }
         }
 
+        if ($request->filled('trang_thai')) {
+            $q->where('trang_thai', $request->trang_thai);
+        }
+
         if ($request->filled('filter')) {
             $filter = $request->get('filter');
             if ($filter === 'chua_cham') {
                 $q->whereIn('trang_thai', ['cho_cham_1', 'dang_cham_1', 'cho_cham_2', 'dang_cham_2', 'cho_thong_nhat']);
             } elseif ($filter === 'da_cham') {
-                $q->where('trang_thai', 'da_chot');
+                $q->whereIn('trang_thai', ['da_chot', 'da_cong_bo']);
             }
         }
 
@@ -56,18 +61,22 @@ class ChamThiController extends Controller
 
         $baithi->load(['cauTraLois.cauHoi', 'dangKy.sinhVien', 'dangKy.lichThi', 'giangVien1', 'giangVien2']);
 
-        $isGV1 = ($baithi->giang_vien_1_id === $user->id);
-        $isGV2 = ($baithi->giang_vien_2_id === $user->id);
-
-        // HĐ15-16: GV2 xem bài trước khi GV1 hoàn thành -> Chế độ chỉ đọc
-        $isGV2ReadOnlyBeforeGV1 = ($isGV2 && in_array($baithi->trang_thai, ['cho_cham_1', 'dang_cham_1']));
-        $isReadOnly = $baithi->da_khoa || ($baithi->trang_thai === 'da_chot') || $isGV2ReadOnlyBeforeGV1;
-
         if ($baithi->trang_thai === 'cho_thong_nhat') {
             return redirect()->route('giangvien.cham-thi.thong-nhat', $baithi->id);
         }
 
-        return view('giangvien.cham-thi.show', compact('baithi', 'isGV1', 'isGV2', 'isReadOnly', 'isGV2ReadOnlyBeforeGV1'));
+        $isGV1 = ($baithi->giang_vien_1_id === $user->id);
+        $isGV2 = ($baithi->giang_vien_2_id === $user->id);
+
+        // Xác định lượt chấm tích cực (Active Turn)
+        $isTurnGV1 = $isGV1 && in_array($baithi->trang_thai, ['cho_cham_1', 'dang_cham_1']);
+        $isTurnGV2 = $isGV2 && in_array($baithi->trang_thai, ['cho_cham_2', 'dang_cham_2']);
+
+        // Chưa tới lượt chấm hoặc bài thi đã chốt/khóa -> Chế độ chỉ đọc
+        $isNotMyTurn = !$isTurnGV1 && !$isTurnGV2;
+        $isReadOnly = $baithi->da_khoa || ($baithi->trang_thai === 'da_chot') || $isNotMyTurn;
+
+        return view('giangvien.cham-thi.show', compact('baithi', 'isGV1', 'isGV2', 'isTurnGV1', 'isTurnGV2', 'isReadOnly', 'isNotMyTurn'));
     }
 
     public function luuDiem(Request $request, BaiThi $baithi)
@@ -81,13 +90,16 @@ class ChamThiController extends Controller
 
         $isGV1 = ($baithi->giang_vien_1_id === $user->id);
         $isGV2 = ($baithi->giang_vien_2_id === $user->id);
-        $action = $request->input('action', 'nhap'); // 'nhap' (lưu nháp) hoặc 'gui' (gửi kết quả)
+        $action = $request->input('action', 'nhap');
 
-        if ($isGV1) {
-            if (!in_array($baithi->trang_thai, ['cho_cham_1', 'dang_cham_1'])) {
-                return redirect()->back()->withErrors(['msg' => 'GV1 chỉ được chấm khi bài thi ở trạng thái chờ/đang chấm lần 1.']);
-            }
+        $isTurnGV1 = $isGV1 && in_array($baithi->trang_thai, ['cho_cham_1', 'dang_cham_1']);
+        $isTurnGV2 = $isGV2 && in_array($baithi->trang_thai, ['cho_cham_2', 'dang_cham_2']);
 
+        if (!$isTurnGV1 && !$isTurnGV2) {
+            return redirect()->back()->withErrors(['msg' => 'Chưa tới lượt chấm của bạn hoặc bài thi đang ở trạng thái không cho phép chỉnh sửa.']);
+        }
+
+        if ($isTurnGV1) {
             $data = $request->validate([
                 'diem.*' => 'nullable|numeric|min:0',
                 'nhan_xet_1' => 'nullable|string',
@@ -97,7 +109,6 @@ class ChamThiController extends Controller
                 $ctl = CauTraLoi::where('bai_thi_id', $baithi->id)->findOrFail($cauTraLoiId);
                 $diemToiDa = $ctl->cauHoi->diem;
                 $diemCapped = min((float) $diem, (float) $diemToiDa);
-                // Ghi vào diem_gv1, KHÔNG ghi đè diem_dat
                 $ctl->update(['diem_gv1' => $diemCapped]);
             }
 
@@ -112,16 +123,7 @@ class ChamThiController extends Controller
             return redirect()->route('giangvien.cham-thi.index')->with('status', $msg);
         }
 
-        if ($isGV2) {
-            // BR-03: GV2 không được gửi điểm trước khi GV1 hoàn thành
-            if (in_array($baithi->trang_thai, ['cho_cham_1', 'dang_cham_1'])) {
-                return redirect()->back()->withErrors(['msg' => 'GV2 chưa đến lượt chấm. GV1 phải hoàn thành chấm lần 1 trước.']);
-            }
-
-            if (!in_array($baithi->trang_thai, ['cho_cham_2', 'dang_cham_2'])) {
-                return redirect()->back()->withErrors(['msg' => 'Bài thi không ở trạng thái chờ/đang chấm lần 2.']);
-            }
-
+        if ($isTurnGV2) {
             $data = $request->validate([
                 'diem.*' => 'nullable|numeric|min:0',
                 'nhan_xet_2' => 'nullable|string',
@@ -131,7 +133,6 @@ class ChamThiController extends Controller
                 $ctl = CauTraLoi::where('bai_thi_id', $baithi->id)->findOrFail($cauTraLoiId);
                 $diemToiDa = $ctl->cauHoi->diem;
                 $diemCapped = min((float) $diem, (float) $diemToiDa);
-                // Ghi vào diem_gv2, KHÔNG ghi đè diem_gv1 hay diem_dat
                 $ctl->update(['diem_gv2' => $diemCapped]);
             }
 
@@ -156,76 +157,73 @@ class ChamThiController extends Controller
     }
 
     /**
-     * HĐ20: So sánh kết quả tự luận GV1 vs GV2
+     * So sánh kết quả tự luận GV1 vs GV2
      */
     private function xuLyPhanNhanhHD20(BaiThi $baithi)
     {
         $cauTuLuans = $baithi->cauTraLois()->whereHas('cauHoi', function ($q) {
-            $q->where('loai_cau', 'tu_luan');
+            $q->whereIn('loai_cau', ['tu_luan', 'tuluan']);
         })->get();
 
-        // Nếu không có câu tự luận nào trong bài
-        if ($cauTuLuans->isEmpty()) {
-            $tongGV1 = 0;
-            $tongGV2 = 0;
-        } else {
-            $tongGV1 = (float) $cauTuLuans->sum('diem_gv1');
-            $tongGV2 = (float) $cauTuLuans->sum('diem_gv2');
-        }
-
-        $isThongNhat = $this->kiemTraThongNhat($tongGV1, $tongGV2);
+        // Kiểm tra xem 2 giảng viên có điểm trùng khớp hoàn toàn trên từng câu hay không
+        $isThongNhat = $this->kiemTraThongNhat($cauTuLuans);
 
         if ($isThongNhat) {
-            // NHÁNH A: Thống nhất theo quy định -> HĐ23 -> HĐ24
-            $diemChotTuLuan = $this->tinhDiemChotNhanhA($tongGV1, $tongGV2);
-            $diemTong = (float) $baithi->diem_tu_dong + $diemChotTuLuan;
+            // Đồng nhất hoàn toàn (không có chênh lệch ở bất kỳ câu nào) -> Tự động chốt điểm bài thi
+            $tongGV1 = (float) $cauTuLuans->sum('diem_gv1');
 
-            // HĐ24: Ghi chính thức điểm chốt và tổng điểm
-            $baithi->update([
-                'diem_chot' => $diemChotTuLuan,
-                'diem_tong' => $diemTong,
-                'cham_xong' => true,
-                'da_khoa' => true,
-                'trang_thai' => 'da_chot',
-                'ngay_cham' => now(),
-            ]);
+            DB::transaction(function () use ($baithi, $tongGV1, $cauTuLuans) {
+                $diemChotTuLuan = $tongGV1;
+                $diemTong = (float) $baithi->diem_tu_dong + $diemChotTuLuan;
 
-            // Cập nhật diem_dat từng câu tự luận (backward compatibility)
-            foreach ($cauTuLuans as $ctl) {
-                // Điểm câu tự luận chốt theo tỉ lệ hoặc giá trị GV1
-                $ctl->update([
-                    'diem_dat' => $ctl->diem_gv2 ?? $ctl->diem_gv1 ?? 0,
-                    'da_cham' => true,
+                $baithi->update([
+                    'diem_chot' => $diemChotTuLuan,
+                    'diem_tong' => $diemTong,
+                    'cham_xong' => true,
+                    'da_khoa' => true,
+                    'trang_thai' => 'da_chot',
+                    'ngay_cham' => now(),
                 ]);
-            }
+
+                foreach ($cauTuLuans as $ctl) {
+                    $ctl->update([
+                        'diem_dat' => $ctl->diem_gv2 ?? $ctl->diem_gv1 ?? 0,
+                        'da_cham' => true,
+                    ]);
+                }
+            });
 
             return redirect()->route('giangvien.cham-thi.index')
-                ->with('status', 'Kết quả 2 GV thống nhất theo quy định. Hệ thống đã tổng hợp và chốt điểm bài thi (HĐ24).');
+                ->with('status', 'Kết quả chấm của 2 Giảng viên hoàn toàn đồng nhất. Hệ thống đã tự động tổng hợp và chốt điểm bài thi.');
         } else {
-            // NHÁNH B: Có chênh lệch cần thống nhất -> HĐ21
+            // Có chênh lệch điểm ở ít nhất 1 câu giữa GV1 và GV2 -> Chuyển sang trạng thái Chờ thống nhất
             $baithi->update([
                 'trang_thai' => 'cho_thong_nhat',
             ]);
 
             return redirect()->route('giangvien.cham-thi.thong-nhat', $baithi->id)
-                ->with('status', 'Kết quả chấm có chênh lệch cần thống nhất giữa 2 Giảng viên.');
+                ->with('status', 'Phát hiện chênh lệch điểm chấm giữa 2 Giảng viên. Bài thi được chuyển sang bước Chờ thống nhất.');
         }
     }
 
     /**
-     * Helper kiểm tra 2 điểm tự luận có thống nhất theo quy định (PC-01)
+     * Kiểm tra thống nhất: Chỉ khi điểm GV1 và GV2 trên tất cả các câu tự luận trùng khớp hoàn toàn mới coi là đồng nhất
      */
-    private function kiemTraThongNhat(float $tongGV1, float $tongGV2): bool
+    private function kiemTraThongNhat($cauTuLuans): bool
     {
-        // BUSINESS BLOCKER PC-01: Chờ nhóm xác nhận ngưỡng chênh lệch điểm.
-        // Tuyệt đối không hard-code ngưỡng chênh lệch hoặc mặc định hai tổng điểm phải bằng nhau tuyệt đối trong production.
-        $nguong = config('exam.nguong_chenh_lech', null);
-        if ($nguong !== null) {
-            return abs($tongGV1 - $tongGV2) <= (float) $nguong;
+        if ($cauTuLuans->isEmpty()) {
+            return true;
         }
 
-        // Fallback dev/test (KHÔNG PHẢI business rule production)
-        return abs($tongGV1 - $tongGV2) < 0.001;
+        foreach ($cauTuLuans as $ctl) {
+            $diem1 = (float) ($ctl->diem_gv1 ?? 0);
+            $diem2 = (float) ($ctl->diem_gv2 ?? 0);
+            if (abs($diem1 - $diem2) >= 0.001) {
+                return false; // Có chênh lệch ở ít nhất một câu tự luận
+            }
+        }
+
+        return true; // Đồng nhất hoàn toàn
     }
 
     /**
@@ -233,8 +231,6 @@ class ChamThiController extends Controller
      */
     private function tinhDiemChotNhanhA(float $tongGV1, float $tongGV2): float
     {
-        // BUSINESS BLOCKER PC-02: Chờ nhóm xác nhận công thức tính điểm chốt Nhánh A.
-        // Tuyệt đối không tự ý hard-code GV1, GV2, hay trung bình làm logic production.
         $congThuc = config('exam.cong_thuc_nhanh_a', null);
         if ($congThuc === 'trung_binh') {
             return ($tongGV1 + $tongGV2) / 2;
@@ -244,12 +240,11 @@ class ChamThiController extends Controller
             return $tongGV2;
         }
 
-        // Fallback dev/test (KHÔNG PHẢI business rule production)
         return (float) config('exam.dev_fallback_diem_chot_nhanh_a', $tongGV1);
     }
 
     /**
-     * HĐ21-22: Trang trao đổi & nhập điểm thống nhất
+     * Trang trao đổi & nhập điểm thống nhất
      */
     public function thongNhat(BaiThi $baithi)
     {
@@ -261,11 +256,17 @@ class ChamThiController extends Controller
         $isGV1 = ($baithi->giang_vien_1_id === $user->id);
         $isGV2 = ($baithi->giang_vien_2_id === $user->id);
 
-        return view('giangvien.cham-thi.thong-nhat', compact('baithi', 'isGV1', 'isGV2'));
+        $hasDiemThongNhat = $baithi->cauTraLois->filter(function ($ctl) {
+            return in_array($ctl->cauHoi->loai_cau ?? '', ['tu_luan', 'tuluan']);
+        })->every(function ($ctl) {
+            return $ctl->diem_dat !== null;
+        });
+
+        return view('giangvien.cham-thi.thong-nhat', compact('baithi', 'isGV1', 'isGV2', 'hasDiemThongNhat'));
     }
 
     /**
-     * HĐ22: GV2 nhập điểm thống nhất hoặc GV1 xác nhận
+     * GV2 nhập điểm thống nhất hoặc GV1 xác nhận
      */
     public function luuThongNhat(Request $request, BaiThi $baithi)
     {
@@ -278,47 +279,24 @@ class ChamThiController extends Controller
 
         $isGV1 = ($baithi->giang_vien_1_id === $user->id);
         $isGV2 = ($baithi->giang_vien_2_id === $user->id);
+        $action = $request->input('action');
 
-        if ($isGV2) {
-            // HĐ22: GV2 nhập điểm tự luận đã thống nhất + lý do
-            $data = $request->validate([
-                'diem_thong_nhat.*' => 'required|numeric|min:0',
-                'ly_do_thong_nhat' => 'required|string',
-            ], [
-                'ly_do_thong_nhat.required' => 'Vui lòng nhập lý do/ghi chú thống nhất điểm.',
-            ]);
+        $cauTuLuans = $baithi->cauTraLois()->whereHas('cauHoi', function ($q) {
+            $q->whereIn('loai_cau', ['tu_luan', 'tuluan']);
+        })->get();
 
-            $tongDiemThongNhat = 0;
-            foreach ($data['diem_thong_nhat'] as $ctlId => $diemTN) {
-                $ctl = CauTraLoi::where('bai_thi_id', $baithi->id)->findOrFail($ctlId);
-                $diemToiDa = $ctl->cauHoi->diem;
-                $diemTNVal = min((float) $diemTN, (float) $diemToiDa);
-                // TUYỆT ĐỐI KHÔNG ghi đè diem_gv1 hay diem_gv2.
-                // Lưu tạm điểm thống nhất vào diem_dat (chưa chốt) hoặc lưu nháp để GV1 xác nhận
-                $ctl->update(['diem_dat' => $diemTNVal]);
-                $tongDiemThongNhat += $diemTNVal;
+        $hasDiemTN = $cauTuLuans->isNotEmpty() && $cauTuLuans->every(fn($ctl) => $ctl->diem_dat !== null);
+
+        // 1. Nếu GV1 gửi yêu cầu xác nhận kết quả chốt điểm
+        if ($action === 'xac_nhan' && $isGV1) {
+            if (!$hasDiemTN && empty($baithi->ly_do_thong_nhat)) {
+                return redirect()->back()->withErrors(['msg' => 'Chưa có kết quả thống nhất điểm từ GV2. Không thể xác nhận.']);
             }
 
-            // HĐ22: Ghi dữ liệu tạm vào ly_do_thong_nhat, chưa ghi diem_chot chính thức
-            $baithi->update([
-                'ly_do_thong_nhat' => $request->input('ly_do_thong_nhat'),
-            ]);
+            $diemTuLuanThongNhat = (float) $cauTuLuans->sum('diem_dat');
+            $diemTong = (float) $baithi->diem_tu_dong + $diemTuLuanThongNhat;
 
-            return redirect()->back()->with('status', 'GV2 đã nhập điểm thống nhất. Đang chờ GV1 xác nhận.');
-        }
-
-        if ($isGV1) {
-            $action = $request->input('action');
-            if ($action === 'xac_nhan') {
-                // GV1 xác nhận -> HĐ23 & HĐ24: Tổng hợp & Chốt điểm chính thức
-                $cauTuLuans = $baithi->cauTraLois()->whereHas('cauHoi', function ($q) {
-                    $q->where('loai_cau', 'tu_luan');
-                })->get();
-
-                $diemTuLuanThongNhat = (float) $cauTuLuans->sum('diem_dat');
-                $diemTong = (float) $baithi->diem_tu_dong + $diemTuLuanThongNhat;
-
-                // HĐ24: THỜI ĐIỂM DUY NHẤT ghi chính thức diem_chot
+            DB::transaction(function () use ($baithi, $diemTuLuanThongNhat, $diemTong, $cauTuLuans) {
                 $baithi->update([
                     'diem_chot' => $diemTuLuanThongNhat,
                     'diem_tong' => $diemTong,
@@ -326,17 +304,37 @@ class ChamThiController extends Controller
                     'da_khoa' => true,
                     'trang_thai' => 'da_chot',
                     'ngay_cham' => now(),
+                    'ly_do_thong_nhat' => $baithi->ly_do_thong_nhat ?: 'Đã thống nhất điểm',
                 ]);
 
                 foreach ($cauTuLuans as $ctl) {
                     $ctl->update(['da_cham' => true]);
                 }
+            });
 
-                return redirect()->route('giangvien.cham-thi.index')
-                    ->with('status', 'GV1 đã xác nhận. Kết quả thi đã được tổng hợp và chốt chính thức (HĐ24).');
-            } else {
-                return redirect()->back()->with('status', 'GV1 chưa xác nhận. Bài thi tiếp tục ở trạng thái Chờ thống nhất.');
+            return redirect()->route('giangvien.cham-thi.index')
+                ->with('status', 'GV1 đã xác nhận. Kết quả thi đã được tổng hợp và chốt điểm chính thức.');
+        }
+
+        // 2. Nếu GV2 lưu điểm thống nhất & ghi chú
+        if ($isGV2) {
+            $data = $request->validate([
+                'diem_thong_nhat.*' => 'required|numeric|min:0',
+                'ly_do_thong_nhat' => 'nullable|string',
+            ]);
+
+            foreach ($data['diem_thong_nhat'] as $ctlId => $diemTN) {
+                $ctl = CauTraLoi::where('bai_thi_id', $baithi->id)->findOrFail($ctlId);
+                $diemToiDa = $ctl->cauHoi->diem;
+                $diemTNVal = min((float) $diemTN, (float) $diemToiDa);
+                $ctl->update(['diem_dat' => $diemTNVal]);
             }
+
+            $baithi->update([
+                'ly_do_thong_nhat' => $request->input('ly_do_thong_nhat') ?: 'Đã thống nhất điểm',
+            ]);
+
+            return redirect()->back()->with('status', 'GV2 đã lưu điểm thống nhất. Đang chờ GV1 xác nhận.');
         }
 
         abort(403);

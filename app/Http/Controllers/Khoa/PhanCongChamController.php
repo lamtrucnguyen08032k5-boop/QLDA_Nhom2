@@ -54,12 +54,21 @@ class PhanCongChamController extends Controller
     {
         $this->authorizeKhoaForBaiThi($baithi);
 
+        $isGradingStarted = $baithi->cham_xong 
+            || $baithi->da_khoa 
+            || !in_array($baithi->trang_thai, ['da_nop', 'cho_cham_1']);
+
+        if ($isGradingStarted) {
+            return redirect()->back()->withErrors(['msg' => 'Bài thi đã được giảng viên tiến hành chấm hoặc đã chốt/công bố điểm. Không thể thay đổi người chấm thi nữa.']);
+        }
+
         $request->validate([
             'giang_vien_1_id' => 'required|exists:users,id',
-            'giang_vien_2_id' => 'required|exists:users,id',
+            'giang_vien_2_id' => 'required|different:giang_vien_1_id|exists:users,id',
         ], [
             'giang_vien_1_id.required' => 'Vui lòng chọn Giảng viên chấm lần 1.',
             'giang_vien_2_id.required' => 'Vui lòng chọn Giảng viên chấm lần 2.',
+            'giang_vien_2_id.different' => 'Giảng viên chấm lần 2 phải khác với Giảng viên chấm lần 1.',
         ]);
 
         $khoaId = Auth::user()->khoa_id;
@@ -67,11 +76,13 @@ class PhanCongChamController extends Controller
         $gv1 = User::where('id', $request->giang_vien_1_id)
             ->where('role', 'giangvien')
             ->where('khoa_id', $khoaId)
+            ->where('active', true)
             ->firstOrFail();
 
         $gv2 = User::where('id', $request->giang_vien_2_id)
             ->where('role', 'giangvien')
             ->where('khoa_id', $khoaId)
+            ->where('active', true)
             ->firstOrFail();
 
         $baithi->update([
@@ -90,7 +101,12 @@ class PhanCongChamController extends Controller
             'bai_thi_ids' => 'required|array',
             'bai_thi_ids.*' => 'exists:bai_this,id',
             'giang_vien_1_id' => 'required|exists:users,id',
-            'giang_vien_2_id' => 'required|exists:users,id',
+            'giang_vien_2_id' => 'required|different:giang_vien_1_id|exists:users,id',
+        ], [
+            'bai_thi_ids.required' => 'Vui lòng chọn ít nhất một bài thi.',
+            'giang_vien_1_id.required' => 'Vui lòng chọn Giảng viên chấm lần 1.',
+            'giang_vien_2_id.required' => 'Vui lòng chọn Giảng viên chấm lần 2.',
+            'giang_vien_2_id.different' => 'Giảng viên chấm lần 2 phải khác với Giảng viên chấm lần 1.',
         ]);
 
         $khoaId = Auth::user()->khoa_id;
@@ -98,16 +114,25 @@ class PhanCongChamController extends Controller
         User::where('id', $request->giang_vien_1_id)
             ->where('role', 'giangvien')
             ->where('khoa_id', $khoaId)
+            ->where('active', true)
             ->firstOrFail();
 
         User::where('id', $request->giang_vien_2_id)
             ->where('role', 'giangvien')
             ->where('khoa_id', $khoaId)
+            ->where('active', true)
             ->firstOrFail();
 
         $baiThis = BaiThi::whereIn('id', $request->bai_thi_ids)
             ->whereHas('deThi', fn ($q) => $q->where('khoa_id', $khoaId))
+            ->where('cham_xong', false)
+            ->where('da_khoa', false)
+            ->whereIn('trang_thai', ['da_nop', 'cho_cham_1'])
             ->get();
+
+        if ($baiThis->isEmpty()) {
+            return redirect()->back()->withErrors(['msg' => 'Tất cả bài thi được chọn đều đã được tiến hành chấm hoặc đã chốt điểm/công bố. Không thể thay đổi người chấm thi.']);
+        }
 
         foreach ($baiThis as $baithi) {
             $baithi->update([
@@ -117,7 +142,7 @@ class PhanCongChamController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('status', 'Đã phân công hàng loạt bài thi thành công.');
+        return redirect()->back()->with('status', 'Đã phân công hàng loạt cho ' . $baiThis->count() . ' bài thi thành công.');
     }
 
     private function authorizeKhoaForBaiThi(BaiThi $baithi): void

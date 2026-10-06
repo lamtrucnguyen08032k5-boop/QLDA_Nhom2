@@ -71,9 +71,12 @@
                 </thead>
                 <tbody>
                 @forelse ($baiThis as $bt)
+                    @php
+                        $cannotAssign = $bt->cham_xong || $bt->da_khoa || !in_array($bt->trang_thai, ['da_nop', 'cho_cham_1']);
+                    @endphp
                     <tr>
                         <td>
-                            <input type="checkbox" name="bai_thi_ids[]" value="{{ $bt->id }}" class="item-checkbox">
+                            <input type="checkbox" name="bai_thi_ids[]" value="{{ $bt->id }}" class="item-checkbox" {{ $cannotAssign ? 'disabled' : '' }}>
                         </td>
                         <td>
                             <div class="fw-bold">{{ $bt->dangKy->sinhVien->name ?? 'N/A' }}</div>
@@ -126,9 +129,15 @@
                             @endswitch
                         </td>
                         <td class="text-end">
-                            <a href="{{ route('khoa.phan-cong-cham.show', $bt->id) }}" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-pencil-square me-1"></i>Phân công
-                            </a>
+                            @if($cannotAssign)
+                                <a href="{{ route('khoa.phan-cong-cham.show', $bt->id) }}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-eye me-1"></i>Xem chi tiết
+                                </a>
+                            @else
+                                <a href="{{ route('khoa.phan-cong-cham.show', $bt->id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-pencil-square me-1"></i>Phân công
+                                </a>
+                            @endif
                         </td>
                     </tr>
                 @empty

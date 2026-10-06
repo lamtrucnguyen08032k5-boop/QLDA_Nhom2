@@ -37,6 +37,10 @@ class PhucKhaoController extends Controller
     {
         $this->authorizeKhoaForPhucKhao($phuckhao);
 
+        if ($phuckhao->trang_thai !== PhucKhao::TRANG_THAI_CHO_PHAN_CONG) {
+            return redirect()->back()->withErrors(['msg' => 'Yêu cầu phúc khảo không ở trạng thái chờ phân công hoặc giảng viên đã tiến hành chấm/xử lý. Không thể thay đổi phân công nữa.']);
+        }
+
         $request->validate([
             'giang_vien_id' => 'required|exists:users,id',
         ], [
@@ -47,6 +51,7 @@ class PhucKhaoController extends Controller
         $gv = User::where('id', $request->giang_vien_id)
             ->where('role', 'giangvien')
             ->where('khoa_id', $khoaId)
+            ->where('active', true)
             ->firstOrFail();
 
         // HĐ10-11: Khoa phân công GV -> trang_thai = 'dang_xu_ly'

@@ -25,10 +25,20 @@
                 @if(request('tab'))
                     <input type="hidden" name="tab" value="{{ request('tab') }}">
                 @endif
+                <select name="trang_thai" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">-- Lọc theo trạng thái bài thi --</option>
+                    <option value="cho_cham_1" {{ request('trang_thai') === 'cho_cham_1' ? 'selected' : '' }}>Chờ chấm lần 1</option>
+                    <option value="dang_cham_1" {{ request('trang_thai') === 'dang_cham_1' ? 'selected' : '' }}>Đang chấm lần 1</option>
+                    <option value="cho_cham_2" {{ request('trang_thai') === 'cho_cham_2' ? 'selected' : '' }}>Chờ chấm lần 2</option>
+                    <option value="dang_cham_2" {{ request('trang_thai') === 'dang_cham_2' ? 'selected' : '' }}>Đang chấm lần 2</option>
+                    <option value="cho_thong_nhat" {{ request('trang_thai') === 'cho_thong_nhat' ? 'selected' : '' }}>Chờ thống nhất</option>
+                    <option value="da_chot" {{ request('trang_thai') === 'da_chot' ? 'selected' : '' }}>Đã chốt điểm</option>
+                    <option value="da_cong_bo" {{ request('trang_thai') === 'da_cong_bo' ? 'selected' : '' }}>Đã công bố</option>
+                </select>
                 <select name="filter" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">-- Tất cả tiến độ --</option>
                     <option value="chua_cham" {{ request('filter') === 'chua_cham' ? 'selected' : '' }}>Chưa hoàn tất</option>
-                    <option value="da_cham" {{ request('filter') === 'da_cham' ? 'selected' : '' }}>Đã chốt điểm</option>
+                    <option value="da_cham" {{ request('filter') === 'da_cham' ? 'selected' : '' }}>Đã chốt/công bố</option>
                 </select>
             </form>
         </div>

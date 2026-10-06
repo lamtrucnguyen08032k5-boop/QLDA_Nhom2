@@ -76,11 +76,22 @@
                 <h5 class="card-title fw-bold mb-0">Phân công Giảng viên</h5>
             </div>
             <div class="card-body">
+                @php
+                    $cannotAssign = $baithi->cham_xong || $baithi->da_khoa || !in_array($baithi->trang_thai, ['da_nop', 'cho_cham_1']);
+                @endphp
+
+                @if($cannotAssign)
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-lock-fill me-1"></i>
+                        <strong>Không thể thay đổi phân công:</strong> Bài thi đã được giảng viên tiến hành chấm (hoặc đã chốt điểm/công bố) nên không thể thay đổi người chấm thi nữa.
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('khoa.phan-cong-cham.update', $baithi->id) }}">
                     @csrf
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Giảng viên chấm lần 1 (GV1) <span class="text-danger">*</span></label>
-                        <select name="giang_vien_1_id" class="form-select" required>
+                        <select name="giang_vien_1_id" class="form-select" required {{ $cannotAssign ? 'disabled' : '' }}>
                             <option value="">-- Chọn GV1 --</option>
                             @foreach($giangViens as $gv)
                                 <option value="{{ $gv->id }}" {{ (old('giang_vien_1_id', $baithi->giang_vien_1_id) == $gv->id) ? 'selected' : '' }}>
@@ -92,7 +103,7 @@
 
                     <div class="mb-4">
                         <label class="form-label fw-semibold">Giảng viên chấm lần 2 (GV2) <span class="text-danger">*</span></label>
-                        <select name="giang_vien_2_id" class="form-select" required>
+                        <select name="giang_vien_2_id" class="form-select" required {{ $cannotAssign ? 'disabled' : '' }}>
                             <option value="">-- Chọn GV2 --</option>
                             @foreach($giangViens as $gv)
                                 <option value="{{ $gv->id }}" {{ (old('giang_vien_2_id', $baithi->giang_vien_2_id) == $gv->id) ? 'selected' : '' }}>
@@ -102,9 +113,11 @@
                         </select>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-save me-1"></i> Lưu phân công
-                    </button>
+                    @if(!$cannotAssign)
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-save me-1"></i> Lưu phân công
+                        </button>
+                    @endif
                 </form>
             </div>
         </div>

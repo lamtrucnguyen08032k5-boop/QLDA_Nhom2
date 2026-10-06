@@ -77,20 +77,24 @@
                         @endswitch
                     </td>
                     <td class="text-end">
-                        <form method="POST" action="{{ route('khoa.phuc-khao.phan-cong', $pk->id) }}" class="d-flex align-items-center gap-1 justify-content-end">
-                            @csrf
-                            <select name="giang_vien_id" class="form-select form-select-sm w-auto" required>
-                                <option value="">-- Chọn GV --</option>
-                                @foreach($giangViens as $gv)
-                                    <option value="{{ $gv->id }}" {{ $pk->giang_vien_id == $gv->id ? 'selected' : '' }}>
-                                        {{ $gv->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-check-lg"></i>
-                            </button>
-                        </form>
+                        @if($pk->trang_thai === \App\Models\PhucKhao::TRANG_THAI_CHO_PHAN_CONG)
+                            <form method="POST" action="{{ route('khoa.phuc-khao.phan-cong', $pk->id) }}" class="d-flex align-items-center gap-1 justify-content-end">
+                                @csrf
+                                <select name="giang_vien_id" class="form-select form-select-sm w-auto" required>
+                                    <option value="">-- Chọn GV --</option>
+                                    @foreach($giangViens as $gv)
+                                        <option value="{{ $gv->id }}" {{ $pk->giang_vien_id == $gv->id ? 'selected' : '' }}>
+                                            {{ $gv->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="btn btn-outline-primary btn-sm" title="Lưu phân công">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </form>
+                        @else
+                            <span class="badge bg-light text-muted border py-2 px-2"><i class="bi bi-lock-fill me-1"></i>Đã khóa phân công</span>
+                        @endif
                     </td>
                 </tr>
             @empty

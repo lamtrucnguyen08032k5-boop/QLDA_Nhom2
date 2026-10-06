@@ -6,27 +6,29 @@
         <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
     </a>
     <div>
-        @if($isGV1)
-            <span class="badge bg-primary">Vai trò: Giảng viên 1 (Lượt 1)</span>
-        @elseif($isGV2)
-            <span class="badge bg-info text-dark">Vai trò: Giảng viên 2 (Lượt 2)</span>
+        @if($isTurnGV1)
+            <span class="badge bg-primary">Lượt chấm của bạn: Giảng viên 1 (Lượt 1)</span>
+        @elseif($isTurnGV2)
+            <span class="badge bg-info text-dark">Lượt chấm của bạn: Giảng viên 2 (Lượt 2)</span>
+        @else
+            <span class="badge bg-secondary">Chế độ xem (Chỉ đọc)</span>
         @endif
     </div>
 </div>
 
-@if($isGV2ReadOnlyBeforeGV1)
+@if($isNotMyTurn)
     <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
-        <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+        <i class="bi bi-eye-fill fs-4 me-3"></i>
         <div>
-            <strong>Chế độ chỉ đọc (Chờ GV1):</strong> Giảng viên 1 chưa hoàn tất lượt chấm 1.
-            Theo quy định (BR-03 / HĐ16), GV2 chỉ được xem bài làm ở chế độ chỉ đọc và chưa được nhập điểm / gửi kết quả.
+            <strong>Chế độ chỉ đọc (Chưa tới lượt chấm):</strong> Bài thi hiện chưa tới lượt chấm của bạn hoặc đã chuyển sang bước tiếp theo.
+            Bạn có thể xem chi tiết bài làm và các điểm số mà Giảng viên đã nhập bên dưới.
         </div>
     </div>
 @elseif($isReadOnly)
     <div class="alert alert-secondary d-flex align-items-center mb-4" role="alert">
         <i class="bi bi-lock-fill fs-4 me-3"></i>
         <div>
-            <strong>Bài thi đã chốt điểm:</strong> Kết quả chấm thi đã được khóa (HĐ24) và không thể chỉnh sửa.
+            <strong>Bài thi đã chốt điểm:</strong> Kết quả chấm thi đã được khóa và không thể chỉnh sửa.
         </div>
     </div>
 @endif
@@ -74,29 +76,46 @@
                         <div class="border rounded p-3 bg-light" style="min-height: 100px; white-space: pre-wrap;">{{ $ctl->bai_lam_tu_luan ?: '(Sinh viên không trả lời câu hỏi này)' }}</div>
                     </div>
 
-                    {{-- Hiển thị kết quả chấm GV1 cho GV2 xem (BR-04 / HĐ16) --}}
-                    @if($isGV2 && $baithi->ngay_cham_1)
-                        <div class="alert alert-info py-2 px-3 mb-3">
-                            <small class="fw-bold"><i class="bi bi-info-circle me-1"></i>Kết quả GV1 chấm (Chế độ chỉ xem):</small>
-                            <div class="fw-bold text-primary">{{ $ctl->diem_gv1 ?? 0 }} / {{ $ctl->cauHoi->diem }} điểm</div>
+                    {{-- Hiển thị kết quả điểm đã chấm của GV1 (khi GV2 đang chấm hoặc ở chế độ chỉ đọc) --}}
+                    <div class="row g-2 mb-3">
+                        @if(($isTurnGV2 || $isReadOnly) && $ctl->diem_gv1 !== null)
+                            <div class="col-md-6">
+                                <div class="alert alert-info py-2 px-3 mb-0">
+                                    <small class="fw-bold d-block"><i class="bi bi-info-circle me-1"></i>Điểm GV1 đã chấm:</small>
+                                    <span class="fw-bold text-primary fs-6">{{ $ctl->diem_gv1 }} / {{ $ctl->cauHoi->diem }} điểm</span>
+                                </div>
+                            </div>
+                        @endif
+                        @if($isReadOnly && $ctl->diem_gv2 !== null)
+                            <div class="col-md-6">
+                                <div class="alert alert-success py-2 px-3 mb-0">
+                                    <small class="fw-bold d-block"><i class="bi bi-check-circle me-1"></i>Điểm GV2 đã chấm:</small>
+                                    <span class="fw-bold text-success fs-6">{{ $ctl->diem_gv2 }} / {{ $ctl->cauHoi->diem }} điểm</span>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    @if(!$isReadOnly)
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">
+                                    {{ $isTurnGV1 ? 'Nhập điểm GV1 chấm' : 'Nhập điểm GV2 chấm' }} (tối đa {{ $ctl->cauHoi->diem }})
+                                </label>
+                                @php
+                                    if ($isTurnGV1) {
+                                        $valDiem = ($baithi->trang_thai === 'cho_cham_1') ? null : $ctl->diem_gv1;
+                                    } else {
+                                        $valDiem = ($baithi->trang_thai === 'cho_cham_2') ? null : $ctl->diem_gv2;
+                                    }
+                                @endphp
+                                <input type="number" step="0.1" min="0" max="{{ $ctl->cauHoi->diem }}"
+                                       name="diem[{{ $ctl->id }}]"
+                                       class="form-control"
+                                       value="{{ old('diem.'.$ctl->id, $valDiem) }}">
+                            </div>
                         </div>
                     @endif
-
-                    <div class="row g-3 align-items-center">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">
-                                {{ $isGV1 ? 'Điểm GV1 chấm' : ($isGV2 ? 'Điểm GV2 chấm' : 'Điểm chấm') }} (tối đa {{ $ctl->cauHoi->diem }})
-                            </label>
-                            @php
-                                $valDiem = $isGV1 ? $ctl->diem_gv1 : ($isGV2 ? $ctl->diem_gv2 : $ctl->diem_dat);
-                            @endphp
-                            <input type="number" step="0.1" min="0" max="{{ $ctl->cauHoi->diem }}"
-                                   name="diem[{{ $ctl->id }}]"
-                                   class="form-control"
-                                   value="{{ old('diem.'.$ctl->id, $valDiem) }}"
-                                   {{ $isReadOnly ? 'readonly disabled' : '' }}>
-                        </div>
-                    </div>
                 @endif
             </div>
         </div>
@@ -108,24 +127,54 @@
             <h5 class="card-title fw-bold mb-0">Nhận xét của Giảng viên</h5>
         </div>
         <div class="card-body">
-            @if($isGV1)
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Nhận xét của GV1</label>
-                    <textarea name="nhan_xet_1" class="form-control" rows="3" {{ $isReadOnly ? 'readonly disabled' : '' }}>{{ old('nhan_xet_1', $baithi->nhan_xet_1) }}</textarea>
+            @if($isTurnGV1)
+                {{-- GV1 đang chấm: Chỉ hiện ô nhập nhận xét của GV1 --}}
+                @php
+                    $valNhanXet1 = ($baithi->trang_thai === 'cho_cham_1') ? '' : $baithi->nhan_xet_1;
+                @endphp
+                <div class="mb-0">
+                    <label class="form-label fw-semibold">Nhận xét của Giảng viên 1</label>
+                    <textarea name="nhan_xet_1" class="form-control" rows="3" placeholder="Nhập nhận xét bài làm của sinh viên (nếu có)...">{{ old('nhan_xet_1', $valNhanXet1) }}</textarea>
                 </div>
-            @endif
+            @elseif($isTurnGV2)
+                {{-- GV2 đang chấm: Hiện nhận xét của GV1 + ô nhập nhận xét của GV2 --}}
+                @php
+                    $valNhanXet2 = ($baithi->trang_thai === 'cho_cham_2') ? '' : $baithi->nhan_xet_2;
+                @endphp
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-primary"><i class="bi bi-chat-left-text me-1"></i>Nhận xét của Giảng viên 1:</label>
+                    <div class="p-3 bg-light rounded border text-dark">
+                        {{ $baithi->nhan_xet_1 ?: '(Giảng viên 1 không có nhận xét)' }}
+                    </div>
+                </div>
 
-            @if($isGV2)
-                @if($baithi->nhan_xet_1)
-                    <div class="mb-3 p-3 bg-light rounded">
-                        <label class="form-label fw-semibold text-muted">Nhận xét của GV1 (chỉ đọc):</label>
-                        <p class="mb-0 text-dark">{{ $baithi->nhan_xet_1 }}</p>
+                <div class="mb-0">
+                    <label class="form-label fw-semibold text-info">Nhận xét của Giảng viên 2</label>
+                    <textarea name="nhan_xet_2" class="form-control" rows="3" placeholder="Nhập nhận xét bài làm của sinh viên (nếu có)...">{{ old('nhan_xet_2', $valNhanXet2) }}</textarea>
+                </div>
+            @else
+                {{-- Chế độ chỉ đọc --}}
+                @if($baithi->nhan_xet_1 !== null)
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-primary"><i class="bi bi-chat-left-text me-1"></i>Nhận xét của Giảng viên 1:</label>
+                        <div class="p-3 bg-light rounded border text-dark">
+                            {{ $baithi->nhan_xet_1 ?: '(Không có nhận xét)' }}
+                        </div>
                     </div>
                 @endif
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Nhận xét của GV2</label>
-                    <textarea name="nhan_xet_2" class="form-control" rows="3" {{ $isReadOnly ? 'readonly disabled' : '' }}>{{ old('nhan_xet_2', $baithi->nhan_xet_2) }}</textarea>
-                </div>
+
+                @if($baithi->nhan_xet_2 !== null)
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold text-info"><i class="bi bi-chat-left-text me-1"></i>Nhận xét của Giảng viên 2:</label>
+                        <div class="p-3 bg-light rounded border text-dark">
+                            {{ $baithi->nhan_xet_2 ?: '(Không có nhận xét)' }}
+                        </div>
+                    </div>
+                @endif
+
+                @if($baithi->nhan_xet_1 === null && $baithi->nhan_xet_2 === null)
+                    <p class="text-muted mb-0 fst-italic">Chưa có nhận xét nào từ Giảng viên.</p>
+                @endif
             @endif
         </div>
     </div>

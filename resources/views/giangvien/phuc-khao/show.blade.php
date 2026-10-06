@@ -51,7 +51,7 @@
 
 <div class="card border-0 shadow-sm mb-5">
     <div class="card-header bg-white py-3">
-        <h5 class="card-title fw-bold mb-0">Gửi kết quả chấm lại phúc khảo (HĐ12-16)</h5>
+        <h5 class="card-title fw-bold mb-0">Gửi kết quả chấm lại phúc khảo</h5>
     </div>
     <div class="card-body">
         @if($phuckhao->trang_thai === 'dang_xu_ly')
@@ -67,7 +67,7 @@
                     <textarea name="phan_hoi" class="form-control" rows="4" placeholder="Nhập lý do điều chỉnh hoặc lý do giữ nguyên điểm..." required>{{ old('phan_hoi', $phuckhao->phan_hoi) }}</textarea>
                 </div>
                 <button type="submit" class="btn btn-primary" data-confirm="Xác nhận gửi kết quả chấm phúc khảo cho Admin duyệt?">
-                    <i class="bi bi-send me-1"></i> Gửi kết quả cho Admin duyệt (HĐ16)
+                    <i class="bi bi-send me-1"></i> Gửi kết quả cho Admin duyệt
                 </button>
             </form>
         @else

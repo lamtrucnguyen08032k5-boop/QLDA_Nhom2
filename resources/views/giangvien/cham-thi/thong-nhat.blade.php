@@ -10,8 +10,8 @@
 <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
     <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
     <div>
-        <strong>HĐ20 — Phát hiện chênh lệch điểm tự luận:</strong> Kết quả chấm tự luận của Giảng viên 1 và Giảng viên 2 có chênh lệch cần thống nhất.
-        Hai Giảng viên tiến hành trao đổi (HĐ21), Giảng viên 2 nhập điểm đã thống nhất (HĐ22) và Giảng viên 1 xác nhận để hoàn tất chốt điểm (HĐ24).
+        <strong>Phát hiện chênh lệch điểm tự luận:</strong> Kết quả chấm tự luận của Giảng viên 1 và Giảng viên 2 có chênh lệch cần thống nhất.
+        Hai Giảng viên tiến hành trao đổi, Giảng viên 2 nhập điểm đã thống nhất và Giảng viên 1 bấm xác nhận để hoàn tất chốt điểm.
     </div>
 </div>
 
@@ -50,7 +50,7 @@
                 </thead>
                 <tbody>
                 @foreach ($baithi->cauTraLois as $ctl)
-                    @if($ctl->cauHoi->loai_cau === 'tu_luan')
+                    @if(in_array($ctl->cauHoi->loai_cau, ['tu_luan', 'tuluan']))
                         <tr>
                             <td class="text-center fw-bold">{{ $loop->iteration }}</td>
                             <td>
@@ -67,7 +67,7 @@
                             </td>
                             <td class="text-center">
                                 @if($isGV2)
-                                    {{-- HĐ22: GV2 nhập điểm đã thống nhất --}}
+                                    {{-- GV2 nhập điểm đã thống nhất --}}
                                     <input type="number" step="0.1" min="0" max="{{ $ctl->cauHoi->diem }}"
                                            name="diem_thong_nhat[{{ $ctl->id }}]"
                                            class="form-control text-center fw-bold border-success"
@@ -98,10 +98,10 @@
 
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-light py-2 fw-semibold">Lý do & Ghi chú thống nhất (HĐ22)</div>
+                <div class="card-header bg-light py-2 fw-semibold">Lý do & Ghi chú thống nhất</div>
                 <div class="card-body">
                     @if($isGV2)
-                        <textarea name="ly_do_thong_nhat" class="form-control" rows="3" placeholder="Nhập lý do thống nhất điểm (HĐ22)..." required>{{ old('ly_do_thong_nhat', $baithi->ly_do_thong_nhat) }}</textarea>
+                        <textarea name="ly_do_thong_nhat" class="form-control" rows="3" placeholder="Nhập lý do thống nhất điểm (không bắt buộc)...">{{ old('ly_do_thong_nhat', $baithi->ly_do_thong_nhat) }}</textarea>
                     @else
                         <div class="p-3 bg-light rounded min-height-100">
                             {{ $baithi->ly_do_thong_nhat ?: 'Chưa có ghi chú thống nhất từ GV2.' }}
@@ -116,25 +116,30 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 @if($isGV2)
-                    <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>HĐ22: Sau khi GV2 lưu điểm thống nhất, hệ thống sẽ gửi cho GV1 xác nhận.</span>
-                @elseif($isGV1)
-                    <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>HĐ22/HĐ24: GV1 kiểm tra kết quả thống nhất từ GV2 và bấm Xác nhận để chốt điểm chính thức.</span>
+                    <span class="text-muted small d-block"><i class="bi bi-info-circle me-1"></i>GV2 nhập điểm đã thống nhất và nhấn "Lưu điểm thống nhất" để gửi GV1.</span>
+                @endif
+                @if($isGV1)
+                    <span class="text-muted small d-block"><i class="bi bi-info-circle me-1"></i>GV1 kiểm tra kết quả thống nhất từ GV2 và bấm "GV1 Xác nhận kết quả" để chốt điểm chính thức.</span>
                 @endif
             </div>
 
-            <div>
+            <div class="d-flex gap-2">
                 @if($isGV2)
-                    <button type="submit" class="btn btn-success px-4">
-                        <i class="bi bi-check-circle me-1"></i> Lưu điểm thống nhất (HĐ22)
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle me-1"></i> Lưu điểm thống nhất
                     </button>
-                @elseif($isGV1)
-                    @if($baithi->ly_do_thong_nhat)
-                        <button type="submit" name="action" value="xac_nhan" class="btn btn-success px-4" data-confirm="Xác nhận kết quả thống nhất điểm tự luận để chốt bài thi (HĐ24)?">
-                            <i class="bi bi-check2-all me-1"></i> GV1 Xác nhận kết quả (Chốt điểm HĐ24)
-                        </button>
-                    @else
-                        <span class="text-warning fw-semibold"><i class="bi bi-hourglass-split me-1"></i>Chờ GV2 nhập điểm và ghi chú thống nhất trước</span>
-                    @endif
+                @endif
+
+                @php
+                    $daCoKetQuaGV2 = ($hasDiemThongNhat ?? false) || !empty($baithi->ly_do_thong_nhat);
+                @endphp
+
+                @if($isGV1 && $daCoKetQuaGV2)
+                    <button type="submit" name="action" value="xac_nhan" class="btn btn-success px-4" onclick="return confirm('Xác nhận kết quả thống nhất điểm tự luận để chốt bài thi?');">
+                        <i class="bi bi-check2-all me-1"></i> GV1 Xác nhận kết quả (Chốt điểm)
+                    </button>
+                @elseif($isGV1 && !$daCoKetQuaGV2)
+                    <span class="text-warning fw-semibold align-self-center"><i class="bi bi-hourglass-split me-1"></i>Chờ GV2 nhập điểm thống nhất trước</span>
                 @endif
             </div>
         </div>

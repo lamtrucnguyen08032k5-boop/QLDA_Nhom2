@@ -15,7 +15,7 @@
             <div>
                 <h5 class="mb-1 text-primary fw-bold">{{ $lichthi->ten_ky_thi }}</h5>
                 <p class="text-muted mb-0 small">
-                    <strong>Ngày thi:</strong> {{ optional($lichthi->ngay_thi)->format('d/m/Y') }} &bull;
+                    @if($lichthi->ma_ca_thi)<strong>Mã ca thi:</strong> <span class="badge bg-white text-primary border font-monospace px-2 py-1">{{ $lichthi->ma_ca_thi }}</span> &bull; @endif<strong>Ngày thi:</strong> {{ optional($lichthi->ngay_thi)->format('d/m/Y') }} &bull;
                     <strong>Giờ thi:</strong> {{ $lichthi->gio_bat_dau ? \Carbon\Carbon::parse($lichthi->gio_bat_dau)->format('H:i') : '—' }} &bull;
                     <strong>Phòng thi:</strong> {{ $lichthi->phong_thi }} &bull;
                     <strong>Chỉ tiêu:</strong> Tối đa {{ $lichthi->so_luong_toi_da }} thí sinh

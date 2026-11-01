@@ -192,45 +192,4 @@
     </div>
 </div>
 
-<!-- Chi tiết từng câu hỏi trong bài làm (nếu có) -->
-@if ($baithi->cauTraLois->isNotEmpty())
-    <div class="card border-0 shadow-sm mt-4">
-        <div class="card-header bg-white py-3 border-0">
-            <h6 class="fw-bold text-dark mb-0">
-                <i class="bi bi-list-check me-2 text-primary"></i>Chi tiết bài làm từng câu
-                <span class="badge bg-light text-secondary border ms-1">{{ $baithi->cauTraLois->count() }} câu</span>
-            </h6>
-        </div>
-        <div class="card-body p-0">
-            <div class="list-group list-group-flush">
-                @foreach ($baithi->cauTraLois as $index => $ctl)
-                    @php $ch = $ctl->cauHoi; @endphp
-                    <div class="list-group-item p-3">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="fw-bold text-primary">Câu {{ $index + 1 }}:</span>
-                            <span class="badge {{ $ctl->diem_dat > 0 ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }} border">
-                                Điểm: {{ (float)$ctl->diem_dat }} / {{ $ch ? (float)$ch->diem : '—' }}
-                            </span>
-                        </div>
-                        <div class="mb-2 text-dark">
-                            {{ $ch->noi_dung ?? 'Nội dung câu hỏi' }}
-                        </div>
-                        @if ($ch && $ch->loai_cau === 'tracnghiem')
-                            <div class="small bg-light p-2 rounded">
-                                <span class="text-muted">Bạn đã chọn đáp án:</span>
-                                <strong class="ms-1 font-monospace text-primary">{{ $ctl->dap_an_chon ?? '(Không chọn)' }}</strong>
-                            </div>
-                        @else
-                            <div class="small bg-light p-2 rounded">
-                                <span class="text-muted d-block mb-1">Nội dung bài làm tự luận của bạn:</span>
-                                <div class="text-dark font-monospace" style="white-space: pre-wrap;">{{ $ctl->bai_lam_tu_luan ?? '(Không có bài làm)' }}</div>
-                            </div>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-@endif
-
 @endsection

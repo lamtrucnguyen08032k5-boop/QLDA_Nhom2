@@ -15,7 +15,7 @@ class ChungNhan extends Model
     public const TRANG_THAI_TU_CHOI = 'tu_choi';       // Admin từ chối
 
     protected $fillable = [
-        'bai_thi_id', 'sinh_vien_id', 'nguoi_cap_id', 'so_chung_nhan', 'trang_thai',
+        'ma_yeu_cau', 'bai_thi_id', 'sinh_vien_id', 'nguoi_cap_id', 'so_chung_nhan', 'trang_thai', 'hinh_thuc_nhan',
         'dia_chi_nhan', 'so_dien_thoai', 'file_chung_nhan', 'ngay_cap', 'ghi_chu',
     ];
 
@@ -39,5 +39,15 @@ class ChungNhan extends Model
     public function nguoiCap()
     {
         return $this->belongsTo(User::class, 'nguoi_cap_id');
+    }
+
+    public function getMaYeuCauHienThiAttribute(): string
+    {
+        return $this->ma_yeu_cau ?: ('YCCN' . ($this->created_at ? $this->created_at->format('ymd') : date('ymd')) . str_pad((string)$this->id, 4, '0', STR_PAD_LEFT));
+    }
+
+    public function getHinhThucNhanTextAttribute(): string
+    {
+        return $this->hinh_thuc_nhan === 'buu_dien' ? 'Qua bưu điện' : 'Trực tiếp tại trường';
     }
 }

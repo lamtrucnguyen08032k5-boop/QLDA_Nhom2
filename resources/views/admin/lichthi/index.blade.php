@@ -187,6 +187,13 @@
                                         Tiếng Anh
                                     </span>
                                 @endif
+                                @if($lt->ma_ca_thi)
+                                    <div class="mt-1">
+                                        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem;" title="Mã ca thi">
+                                            {{ $lt->ma_ca_thi }}
+                                        </span>
+                                    </div>
+                                @endif
                             </td>
                             <td>
                                 <span class="text-dark fw-medium">{{ $lt->khoa->ten_khoa ?? 'Chưa phân công' }}</span>

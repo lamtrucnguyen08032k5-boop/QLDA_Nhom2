@@ -179,6 +179,13 @@
                                 @else
                                     <span class="text-muted">—</span>
                                 @endif
+                                @if($lt->ma_ca_thi)
+                                    <div class="mt-1">
+                                        <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem;" title="Mã ca thi">
+                                            {{ $lt->ma_ca_thi }}
+                                        </span>
+                                    </div>
+                                @endif
                             </td>
                             <td><span class="badge text-bg-light border text-dark"><i class="bi bi-door-closed me-1"></i>{{ $lt->phong_thi }}</span></td>
                             <td class="text-center">

@@ -112,7 +112,6 @@ class KetQuaController extends Controller
             }
 
             $baithi->load([
-                'cauTraLois.cauHoi',
                 'dangKy.lichThi.khoa',
                 'dangKy.sinhVien',
                 'deThi',

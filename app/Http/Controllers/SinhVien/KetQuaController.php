@@ -32,6 +32,12 @@ class KetQuaController extends Controller
 
             $hasFilter = false;
 
+            // Chặn trường hợp đến ngày nhỏ hơn từ ngày
+            if ($request->filled('tu_ngay') && $request->filled('den_ngay') && $request->tu_ngay > $request->den_ngay) {
+                return redirect()->route('sinhvien.ketqua.index', $request->except(['den_ngay']))
+                    ->with('warning', 'Đến ngày phải lớn hơn hoặc bằng từ ngày.');
+            }
+
             // Tra cứu theo tên bài thi / tên kỳ thi
             if ($request->filled('q')) {
                 $hasFilter = true;

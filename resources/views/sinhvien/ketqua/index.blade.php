@@ -43,11 +43,11 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold text-muted mb-1">Thi từ ngày</label>
-                    <input type="date" name="tu_ngay" class="form-control form-control-sm" value="{{ request('tu_ngay') }}">
+                    <input type="date" id="filter_tu_ngay" name="tu_ngay" class="form-control form-control-sm" value="{{ request('tu_ngay') }}" {{ request('den_ngay') ? 'max=' . request('den_ngay') : '' }}>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold text-muted mb-1">Đến ngày</label>
-                    <input type="date" name="den_ngay" class="form-control form-control-sm" value="{{ request('den_ngay') }}">
+                    <input type="date" id="filter_den_ngay" name="den_ngay" class="form-control form-control-sm" value="{{ request('den_ngay') }}" {{ request('tu_ngay') ? 'min=' . request('tu_ngay') : '' }}>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small fw-semibold text-muted mb-1">Kết quả</label>
@@ -167,4 +167,66 @@
     </div>
 @endif
 
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tuNgayInput = document.getElementById('filter_tu_ngay');
+    const denNgayInput = document.getElementById('filter_den_ngay');
+    const filterForm = tuNgayInput ? tuNgayInput.closest('form') : null;
+
+    if (tuNgayInput && denNgayInput) {
+        function syncDateConstraints(notify = false) {
+            if (tuNgayInput.value) {
+                denNgayInput.min = tuNgayInput.value;
+                if (denNgayInput.value && denNgayInput.value < tuNgayInput.value) {
+                    denNgayInput.value = tuNgayInput.value;
+                    if (notify && window.AppNotify) {
+                        AppNotify.warning('Đến ngày không thể nhỏ hơn từ ngày và đã được tự động điều chỉnh.');
+                    }
+                }
+            } else {
+                denNgayInput.removeAttribute('min');
+            }
+
+            if (denNgayInput.value) {
+                tuNgayInput.max = denNgayInput.value;
+            } else {
+                tuNgayInput.removeAttribute('max');
+            }
+        }
+
+        tuNgayInput.addEventListener('change', function () {
+            syncDateConstraints(true);
+        });
+
+        denNgayInput.addEventListener('change', function () {
+            if (tuNgayInput.value && denNgayInput.value && denNgayInput.value < tuNgayInput.value) {
+                if (window.AppNotify) {
+                    AppNotify.warning('Đến ngày không được nhỏ hơn từ ngày!');
+                }
+                denNgayInput.value = tuNgayInput.value;
+            }
+            syncDateConstraints(false);
+        });
+
+        if (filterForm) {
+            filterForm.addEventListener('submit', function (e) {
+                if (tuNgayInput.value && denNgayInput.value && denNgayInput.value < tuNgayInput.value) {
+                    e.preventDefault();
+                    if (window.AppNotify) {
+                        AppNotify.error('Đến ngày phải lớn hơn hoặc bằng từ ngày!');
+                    } else {
+                        alert('Đến ngày phải lớn hơn hoặc bằng từ ngày!');
+                    }
+                    denNgayInput.focus();
+                }
+            });
+        }
+
+        syncDateConstraints(false);
+    }
+});
+</script>
 @endsection

@@ -16,6 +16,12 @@ class DashboardController extends Controller
             ->where('trang_thai', 'dang_mo_dang_ky')
             ->where('han_dang_ky', '>', now());
 
+        // Kiểm tra hợp lệ khoảng ngày lọc
+        if ($request->filled('tu_ngay') && $request->filled('den_ngay') && $request->tu_ngay > $request->den_ngay) {
+            return redirect()->route('sinhvien.dashboard', $request->except(['den_ngay']))
+                ->with('warning', 'Đến ngày thi phải lớn hơn hoặc bằng từ ngày thi.');
+        }
+
         // Lọc theo loại chứng chỉ
         if ($request->filled('loai_chung_chi')) {
             $q->where('loai_chung_chi', $request->loai_chung_chi);

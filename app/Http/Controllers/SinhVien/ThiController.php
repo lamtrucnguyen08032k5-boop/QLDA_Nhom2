@@ -30,7 +30,11 @@ class ThiController extends Controller
     public function chiTiet(DangKy $dangky)
     {
         abort_unless($dangky->sinh_vien_id === Auth::id(), 403);
-        $dangky->load('lichThi', 'baiThi');
+        $dangky->load([
+            'lichThi',
+            'baiThi.deThi.cauHois',
+            'baiThi.cauTraLois.cauHoi',
+        ]);
         return view('sinhvien.thi.chi-tiet', compact('dangky'));
     }
 
@@ -93,7 +97,9 @@ class ThiController extends Controller
 
         $traLoi = $request->input('tra_loi', []); // [cau_hoi_id => 'A'/'B'/... hoặc text tự luận]
 
-        DB::transaction(function () use ($baithi, $traLoi) {
+        $coTuLuan = false;
+
+        DB::transaction(function () use ($baithi, $traLoi, &$coTuLuan) {
             $diemTuDong = 0;
 
             foreach ($baithi->deThi->cauHois as $cauHoi) {
@@ -123,17 +129,27 @@ class ThiController extends Controller
                 }
             }
 
-            $coTuLuan = $baithi->deThi->cauHois->contains('loai_cau', 'tuluan');
+            $coTuLuan = $baithi->deThi->cauHois->contains(function ($cauHoi) {
+                return in_array($cauHoi->loai_cau, ['tuluan', 'tu_luan']);
+            });
 
             $baithi->update([
                 'gio_nop' => now(),
                 'diem_tu_dong' => $diemTuDong,
                 'diem_tong' => $coTuLuan ? null : $diemTuDong, // nếu không có tự luận thì chấm xong luôn
                 'cham_xong' => ! $coTuLuan,
-                'trang_thai' => $coTuLuan ? 'dang_cham' : 'da_cham',
+                'trang_thai' => $coTuLuan ? 'da_nop' : 'da_cong_bo', // bài thi trắc nghiệm công bố kết quả ngay
+                'ngay_cong_bo' => $coTuLuan ? null : now(),
             ]);
         });
 
-        return redirect()->route('sinhvien.thi.chi-tiet', $baithi->dangKy)->with('status', 'Nộp bài thành công.');
+        $baithi->refresh();
+        $tongDiemTN = $baithi->tong_diem_toi_da_trac_nghiem;
+        $msg = "Nộp bài thành công! Điểm phần trắc nghiệm của bạn: {$baithi->diem_tu_dong} / {$tongDiemTN} điểm.";
+        if ($coTuLuan) {
+            $msg .= " Phần câu hỏi tự luận chưa chấm (đang chờ Giảng viên chấm thi).";
+        }
+
+        return redirect()->route('sinhvien.thi.chi-tiet', $baithi->dangKy)->with('status', $msg);
     }
 }

@@ -14,10 +14,7 @@ class PhucKhaoController extends Controller
     {
         $user = Auth::user();
         $q = PhucKhao::with(['baiThi.dangKy.sinhVien', 'baiThi.deThi'])
-            ->where(function ($qq) use ($user) {
-                $qq->where('giang_vien_id', $user->id)
-                   ->orWhereHas('baiThi.deThi', fn ($q3) => $q3->where('khoa_id', $user->khoa_id));
-            });
+            ->where('giang_vien_id', $user->id);
 
         if ($request->filled('trang_thai')) {
             $q->where('trang_thai', $request->trang_thai);
@@ -71,8 +68,7 @@ class PhucKhaoController extends Controller
     private function authorizeGiangVienForPhucKhao(PhucKhao $phuckhao): void
     {
         $user = Auth::user();
-        if ($phuckhao->giang_vien_id !== $user->id &&
-            $phuckhao->baiThi->deThi->khoa_id !== $user->khoa_id) {
+        if ($phuckhao->giang_vien_id !== $user->id) {
             abort(403, 'Bạn không được phân công chấm bài phúc khảo này.');
         }
     }

@@ -49,7 +49,8 @@
         @foreach ($lichThis as $lt)
             @php
                 $daDangKy = in_array($lt->id, $daDangKyIds);
-                $conChoNgoi = $lt->dangKysDaDuyet()->count() < $lt->so_luong_toi_da;
+                $soChoConLai = $lt->so_cho_con_lai;
+                $conChoNgoi = $soChoConLai > 0;
             @endphp
             <div class="col-md-6 col-lg-4">
                 <div class="card h-100 border-0 shadow-sm hover-card">
@@ -109,9 +110,8 @@
                             <tr>
                                 <td class="text-muted ps-0">👥 Còn chỗ:</td>
                                 <td>
-                                    @php $soDaDuyet = $lt->dangKysDaDuyet()->count(); @endphp
-                                    <span class="{{ $soDaDuyet >= $lt->so_luong_toi_da ? 'text-danger fw-bold' : 'text-success fw-semibold' }}">
-                                        {{ $lt->so_luong_toi_da - $soDaDuyet }} / {{ $lt->so_luong_toi_da }}
+                                    <span class="{{ $soChoConLai <= 0 ? 'text-danger fw-bold' : 'text-success fw-semibold' }}">
+                                        {{ $soChoConLai }} / {{ $lt->so_luong_toi_da }}
                                     </span>
                                 </td>
                             </tr>

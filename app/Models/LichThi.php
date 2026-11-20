@@ -62,6 +62,29 @@ class LichThi extends Model
         return $this->dangKys()->where('trang_thai', 'da_duyet');
     }
 
+    // Nghiệp vụ: Ngay sau khi sinh viên đăng ký, hệ thống ghi nhận lượt đăng ký và trừ số chỗ còn lại
+    // (tất cả hồ sơ chưa bị hủy hoặc chưa bị từ chối đều được tính giữ chỗ)
+    public function dangKysGiuCho()
+    {
+        return $this->dangKys()->whereNotIn('trang_thai', ['da_huy', 'tu_choi']);
+    }
+
+    public function getSoChoDaDangKyAttribute(): int
+    {
+        return $this->dangKysGiuCho()->count();
+    }
+
+    public function getSoChoConLaiAttribute(): int
+    {
+        $soLuong = $this->so_luong_toi_da ?? 0;
+        return max(0, $soLuong - $this->so_cho_da_dang_ky);
+    }
+
+    public function daHetCho(): bool
+    {
+        return $this->so_cho_con_lai <= 0;
+    }
+
     public function daHetHanDangKy(): bool
     {
         return now()->greaterThan($this->han_dang_ky);

@@ -4,15 +4,20 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PhucKhao;
+use App\Notifications\ThongBaoHeThong;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 // M8 - UC2.3.8 Admin tiếp nhận & duyệt kết quả phúc khảo
 class PhucKhaoController extends Controller
 {
     public function index(Request $request)
     {
-        $q = PhucKhao::with(['baiThi.dangKy.sinhVien', 'baiThi.deThi.khoa', 'giangVien', 'adminTiepNhan', 'adminDuyet']);
+        $q = PhucKhao::with(['baiThi.dangKy.sinhVien', 'baiThi.deThi.khoa', 'giangVien', 'adminTiepNhan', 'adminDuyet'])
+            ->where('trang_thai', '!=', PhucKhao::TRANG_THAI_CHO_THANH_TOAN);
+
         if ($request->filled('trang_thai')) {
             $q->where('trang_thai', $request->trang_thai);
         }
@@ -58,6 +63,39 @@ class PhucKhaoController extends Controller
             'ly_do_duyet' => $data['ly_do_duyet'],
         ]);
 
+        // Thông báo cho sinh viên
+        $sinhVien = $phuckhao->baiThi?->dangKy?->sinhVien;
+        if ($sinhVien) {
+            try {
+                $sinhVien->notify(new ThongBaoHeThong(
+                    "Yêu cầu phúc khảo bị từ chối: {$phuckhao->ma_phuc_khao_hien_thi}",
+                    "Yêu cầu phúc khảo mã {$phuckhao->ma_phuc_khao_hien_thi} không được tiếp nhận. Lý do: {$data['ly_do_duyet']}",
+                    route('sinhvien.phuc-khao.index'),
+                    'canh_bao',
+                    'bi-x-circle'
+                ));
+            } catch (\Throwable $e) {
+                Log::warning("Lỗi gửi thông báo từ chối phúc khảo: " . $e->getMessage());
+            }
+
+            if (!empty($sinhVien->email)) {
+                try {
+                    Mail::raw(
+                        "Kính gửi {$sinhVien->name},\n\n" .
+                        "Yêu cầu phúc khảo mã [{$phuckhao->ma_phuc_khao_hien_thi}] của bạn không được tiếp nhận.\n" .
+                        "Lý do: {$data['ly_do_duyet']}\n\n" .
+                        "Mọi thắc mắc xin vui lòng liên hệ Phòng Khảo thí.\n\n" .
+                        "Trân trọng,\nHệ thống Khảo thí Trực tuyến.",
+                        function ($msg) use ($sinhVien) {
+                            $msg->to($sinhVien->email)->subject('[Khảo thí] Kết quả tiếp nhận yêu cầu phúc khảo');
+                        }
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning("Lỗi gửi email từ chối phúc khảo: " . $e->getMessage());
+                }
+            }
+        }
+
         return back()->with('status', 'Đã từ chối yêu cầu phúc khảo.');
     }
 
@@ -76,10 +114,51 @@ class PhucKhaoController extends Controller
         ]);
 
         // HĐ19: Nếu điểm thay đổi -> cập nhật diem_tong bài thi
-        if ($phuckhao->diem_sau !== null && $phuckhao->diem_sau != $phuckhao->diem_truoc) {
+        if ($phuckhao->diem_sau !== null && (float)$phuckhao->diem_sau !== (float)$phuckhao->diem_truoc) {
             $phuckhao->baiThi->update([
                 'diem_tong' => $phuckhao->diem_sau,
+                'cham_xong' => true,
+                'da_khoa' => true,
             ]);
+        }
+
+        // Thông báo kết quả hoàn tất phúc khảo cho sinh viên
+        $sinhVien = $phuckhao->baiThi?->dangKy?->sinhVien;
+        if ($sinhVien) {
+            $noiDungDiem = ($phuckhao->diem_sau !== null && (float)$phuckhao->diem_sau !== (float)$phuckhao->diem_truoc)
+                ? "Điểm đã được điều chỉnh từ {$phuckhao->diem_truoc} thành {$phuckhao->diem_sau}."
+                : "Điểm thi được giữ nguyên ({$phuckhao->diem_truoc} điểm).";
+
+            try {
+                $sinhVien->notify(new ThongBaoHeThong(
+                    "Kết quả phúc khảo: {$phuckhao->ma_phuc_khao_hien_thi}",
+                    "Yêu cầu phúc khảo mã {$phuckhao->ma_phuc_khao_hien_thi} đã hoàn tất. {$noiDungDiem}",
+                    route('sinhvien.phuc-khao.index'),
+                    'thanh_cong',
+                    'bi-check-circle'
+                ));
+            } catch (\Throwable $e) {
+                Log::warning("Lỗi gửi thông báo hoàn tất phúc khảo: " . $e->getMessage());
+            }
+
+            if (!empty($sinhVien->email)) {
+                try {
+                    Mail::raw(
+                        "Kính gửi {$sinhVien->name},\n\n" .
+                        "Yêu cầu phúc khảo mã [{$phuckhao->ma_phuc_khao_hien_thi}] đã được phê duyệt và hoàn tất.\n" .
+                        "- Điểm ban đầu: {$phuckhao->diem_truoc}\n" .
+                        "- Điểm sau phúc khảo: " . ($phuckhao->diem_sau ?? $phuckhao->diem_truoc) . "\n" .
+                        "- Ý kiến cán bộ chấm phúc khảo: {$phuckhao->phan_hoi}\n\n" .
+                        "Bạn có thể đăng nhập vào hệ thống để kiểm tra bảng điểm mới nhất.\n\n" .
+                        "Trân trọng,\nHệ thống Khảo thí Trực tuyến.",
+                        function ($msg) use ($sinhVien) {
+                            $msg->to($sinhVien->email)->subject('[Khảo thí] Thông báo kết quả phúc khảo');
+                        }
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning("Lỗi gửi email hoàn tất phúc khảo: " . $e->getMessage());
+                }
+            }
         }
 
         return back()->with('status', 'Đã duyệt hoàn tất kết quả phúc khảo.');

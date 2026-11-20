@@ -11,12 +11,26 @@
     <div class="col-md-7">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3">
-                <h5 class="card-title fw-bold mb-0">Thông tin đăng ký cấp chứng nhận bản cứng</h5>
+                <h5 class="card-title fw-bold mb-0">Thông tin đăng ký cấp chứng nhận</h5>
             </div>
             <div class="card-body">
                 <table class="table table-borderless mb-0">
                     <tr>
-                        <th style="width:170px;" class="text-muted">Sinh viên:</th>
+                        <th style="width:170px;" class="text-muted">Mã yêu cầu:</th>
+                        <td class="font-monospace fw-bold text-primary">{{ $chungnhan->ma_yeu_cau ?? ('CN' . str_pad($chungnhan->id, 5, '0', STR_PAD_LEFT)) }}</td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Hình thức nhận:</th>
+                        <td>
+                            @if(($chungnhan->hinh_thuc_nhan ?? 'dien_tu') === 'ban_cung')
+                                <span class="badge bg-info text-dark"><i class="bi bi-box-seam me-1"></i>Bản cứng (giấy)</span>
+                            @else
+                                <span class="badge bg-secondary"><i class="bi bi-file-earmark-pdf me-1"></i>Bản điện tử (PDF)</span>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="text-muted">Sinh viên:</th>
                         <td class="fw-bold">{{ $chungnhan->sinhVien->name ?? 'N/A' }} ({{ $chungnhan->sinhVien->ma_so ?? '' }})</td>
                     </tr>
                     <tr>
@@ -27,6 +41,7 @@
                         <th class="text-muted">Điểm bài thi:</th>
                         <td><span class="badge bg-success fs-6">{{ $chungnhan->baiThi->diem_tong }}</span></td>
                     </tr>
+                    @if(($chungnhan->hinh_thuc_nhan ?? '') === 'ban_cung')
                     <tr>
                         <th class="text-muted">Địa chỉ nhận bản cứng:</th>
                         <td>{{ $chungnhan->dia_chi_nhan ?? 'Chưa cung cấp' }}</td>
@@ -35,6 +50,7 @@
                         <th class="text-muted">Số điện thoại:</th>
                         <td>{{ $chungnhan->so_dien_thoai ?? 'Chưa cung cấp' }}</td>
                     </tr>
+                    @endif
                     <tr>
                         <th class="text-muted">Trạng thái:</th>
                         <td>
@@ -98,8 +114,10 @@
                         </button>
                     </form>
                 @else
-                    <div class="alert alert-success mb-0">
-                        <i class="bi bi-check-circle-fill me-1"></i> Chứng nhận đã được cấp vào ngày {{ $chungnhan->ngay_cap?->format('d/m/Y H:i') }}.
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-2"></i>Chứng nhận đã được cấp thành công.
+                        <div class="mt-2"><strong>Số chứng nhận:</strong> {{ $chungnhan->so_chung_nhan }}</div>
+                        <div><strong>Ngày cấp:</strong> {{ optional($chungnhan->ngay_cap)->format('d/m/Y') }}</div>
                     </div>
                 @endif
             </div>

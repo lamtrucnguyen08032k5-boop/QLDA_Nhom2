@@ -24,8 +24,10 @@
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
+                    <th>Mã YC</th>
                     <th>Sinh viên</th>
                     <th>Đề thi</th>
+                    <th>Hình thức</th>
                     <th>Điểm thi</th>
                     <th>Số chứng nhận</th>
                     <th>Trạng thái</th>
@@ -36,10 +38,20 @@
             @forelse ($chungNhans as $cn)
                 <tr>
                     <td>
+                        <span class="font-monospace fw-bold text-primary">{{ $cn->ma_yeu_cau ?? ('CN' . str_pad($cn->id, 5, '0', STR_PAD_LEFT)) }}</span>
+                    </td>
+                    <td>
                         <div class="fw-bold">{{ $cn->sinhVien->name ?? 'N/A' }}</div>
                         <span class="text-muted small">{{ $cn->sinhVien->ma_so ?? '' }}</span>
                     </td>
                     <td>{{ $cn->baiThi->deThi->ten_de ?? 'N/A' }}</td>
+                    <td>
+                        @if(($cn->hinh_thuc_nhan ?? 'dien_tu') === 'ban_cung')
+                            <span class="badge bg-info text-dark"><i class="bi bi-box-seam me-1"></i>Bản cứng (giấy)</span>
+                        @else
+                            <span class="badge bg-secondary"><i class="bi bi-file-earmark-pdf me-1"></i>Bản điện tử</span>
+                        @endif
+                    </td>
                     <td><span class="badge bg-success fs-6">{{ $cn->baiThi->diem_tong }}</span></td>
                     <td>{{ $cn->so_chung_nhan ?? '—' }}</td>
                     <td>
@@ -69,7 +81,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="text-center py-4 text-muted">Không có yêu cầu cấp chứng nhận nào.</td>
+                    <td colspan="8" class="text-center py-4 text-muted">Không có yêu cầu cấp chứng nhận nào.</td>
                 </tr>
             @endforelse
             </tbody>

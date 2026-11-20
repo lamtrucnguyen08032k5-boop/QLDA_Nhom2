@@ -22,7 +22,7 @@ class VnPayService
         return filled(config('services.vnpay.tmn_code')) && filled(config('services.vnpay.hash_secret'));
     }
 
-    public function taoUrlThanhToan(string $maGiaoDich, int $soTien, string $noiDung, string $phuongThuc): string
+    public function taoUrlThanhToan(string $maGiaoDich, int $soTien, string $noiDung, string $phuongThuc, ?string $returnUrl = null): string
     {
         $vnpUrl = config('services.vnpay.url', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
 
@@ -37,7 +37,7 @@ class VnPayService
             'vnp_Locale' => 'vn',
             'vnp_OrderInfo' => $noiDung,
             'vnp_OrderType' => 'other',
-            'vnp_ReturnUrl' => config('services.vnpay.return_url') ?: route('sinhvien.dangky.thanhtoan.vnpay.return'),
+            'vnp_ReturnUrl' => $returnUrl ?: (config('services.vnpay.return_url') ?: route('sinhvien.dangky.thanhtoan.vnpay.return')),
             'vnp_TxnRef' => $maGiaoDich,
         ];
 

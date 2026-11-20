@@ -20,11 +20,11 @@
             {{-- Xử lý nút Phúc khảo --}}
             @if ($daPhucKhao)
                 <a href="{{ route('sinhvien.phuc-khao.index') }}" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-clock-history me-1"></i>Đã gửi yêu cầu phúc khảo
+                    <i class="bi bi-clock-history me-1"></i>Xem tiến trình phúc khảo
                 </a>
             @elseif ($conHanPhucKhao)
                 <a href="{{ route('sinhvien.phuc-khao.create', $baithi) }}" class="btn btn-sm btn-warning">
-                    <i class="bi bi-question-circle me-1"></i>Yêu cầu phúc khảo
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Yêu cầu phúc khảo
                 </a>
             @else
                 {{-- Luồng phụ 6: Hết thời hạn phúc khảo --}}
@@ -39,11 +39,11 @@
                     <a href="{{ route('sinhvien.chung-nhan.index') }}" class="btn btn-sm btn-success">
                         <i class="bi bi-award me-1"></i>Xem chứng nhận
                     </a>
-                @elseif ($chungNhan && $chungNhan->trang_thai === 'cho_duyet')
+                @elseif ($chungNhan && in_array($chungNhan->trang_thai, ['cho_duyet', 'cho_xu_ly', 'dang_xu_ly']))
                     {{-- Luồng phụ 5: Chứng nhận chưa được cấp xong --}}
-                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-2">
-                        <i class="bi bi-hourglass-split me-1"></i>Chứng nhận: Đang chờ duyệt
-                    </span>
+                    <a href="{{ route('sinhvien.chung-nhan.index') }}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-hourglass-split me-1"></i>Chứng nhận: Đang xử lý
+                    </a>
                 @else
                     <a href="{{ route('sinhvien.chung-nhan.create', $baithi) }}" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-patch-check me-1"></i>Đăng ký nhận chứng nhận
@@ -66,7 +66,7 @@
     <div class="alert alert-info small d-flex align-items-center py-2 mb-4">
         <i class="bi bi-info-circle-fill me-2 fs-5 text-info"></i>
         <div>
-            Thời hạn đăng ký phúc khảo bài thi đến hết ngày <strong>{{ $hanPhucKhao->format('d/m/Y H:i') }}</strong>. Nếu có thắc mắc về điểm thi, vui lòng chọn nút "Yêu cầu phúc khảo" ở trên.
+            Thời hạn đăng ký phúc khảo bài thi đến hết ngày <strong>{{ $hanPhucKhao->format('d/m/Y H:i') }}</strong>. Nếu có thắc mắc về điểm thi, bạn có thể chọn nút "Yêu cầu phúc khảo" ở trên.
         </div>
     </div>
 @endif
@@ -76,7 +76,7 @@
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white py-3 border-0">
-                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-person-vcard me-2 text-primary"></i>Thông tin thí sinh & Phòng thi</h6>
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-person-vcard me-2 text-primary"></i>Thông tin thí sinh &amp; Phòng thi</h6>
             </div>
             <div class="card-body pt-0">
                 <div class="row g-3">
@@ -156,11 +156,17 @@
 
                     <div class="d-flex justify-content-between py-2 border-bottom">
                         <span class="text-muted">Điểm phần trắc nghiệm:</span>
-                        <strong class="text-dark">{{ (float)$baithi->diem_tu_dong }}</strong>
+                        <strong class="text-dark">{{ (float)$baithi->diem_tu_dong }} / {{ $baithi->tong_diem_toi_da_trac_nghiem }} điểm</strong>
                     </div>
                     <div class="d-flex justify-content-between py-2 border-bottom">
                         <span class="text-muted">Điểm phần tự luận:</span>
-                        <strong class="text-dark">{{ (float)$baithi->diem_cham_tay }}</strong>
+                        <strong class="text-dark">
+                            @if ($baithi->co_tu_luan)
+                                {{ (float)($baithi->diem_chot ?? $baithi->diem_cham_tay) }} / {{ $baithi->tong_diem_toi_da_tu_luan }} điểm
+                            @else
+                                <span class="text-muted fw-normal">Không có tự luận</span>
+                            @endif
+                        </strong>
                     </div>
                     <div class="d-flex justify-content-between py-2 border-bottom">
                         <span class="text-muted">Ngày công bố kết quả:</span>
@@ -173,8 +179,8 @@
                         <span>
                             @if ($chungNhan && $chungNhan->trang_thai === 'da_cap')
                                 <span class="badge bg-success">Đã cấp chứng nhận</span>
-                            @elseif ($chungNhan && $chungNhan->trang_thai === 'cho_duyet')
-                                <span class="badge bg-info text-dark">Đang chờ duyệt</span>
+                            @elseif ($chungNhan && in_array($chungNhan->trang_thai, ['cho_duyet', 'cho_xu_ly', 'dang_xu_ly']))
+                                <span class="badge bg-info text-dark">Đang xử lý cấp</span>
                             @elseif ($isDat)
                                 <span class="badge bg-warning-subtle text-warning-emphasis border">Đủ điều kiện cấp</span>
                             @else

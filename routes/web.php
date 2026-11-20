@@ -32,10 +32,6 @@ use App\Http\Controllers\SinhVien\ThiController;
 use Illuminate\Support\Facades\Route;
 
 // Trang chủ: chưa đăng nhập -> về trang đăng nhập; đã đăng nhập -> về đúng dashboard theo vai trò.
-// (Trước đây dùng Route::redirect('/', '/dang-nhap') vô điều kiện: khi ĐÃ đăng nhập, middleware
-// "guest" trên /dang-nhap lại đá ngược về '/' vì app không có route tên "dashboard"/"home" theo
-// quy ước mặc định của Laravel -> tạo vòng lặp redirect vô hạn (ERR_TOO_MANY_REDIRECTS). Sửa bằng
-// cách điều hướng thẳng theo vai trò ngay tại '/' thay vì trung chuyển qua '/dang-nhap'.)
 Route::get('/', function () {
     if (! auth()->check()) {
         return redirect()->route('login');
@@ -79,9 +75,9 @@ if (class_exists('\App\Http\Controllers\NotificationController')) {
     });
 }
 
-// Điểm trả về (return URL) từ cổng thanh toán VNPAY sau khi sinh viên thanh toán lệ phí thi.
-// Đặt ngoài middleware 'auth' vì đây là redirect từ máy chủ VNPAY, không phải request nội bộ.
+// Điểm trả về (return URL) từ cổng thanh toán VNPAY sau khi sinh viên thanh toán lệ phí thi hoặc phúc khảo.
 Route::get('/thanh-toan/vnpay/return', [ThanhToanController::class, 'vnpayReturn'])->name('sinhvien.dangky.thanhtoan.vnpay.return');
+Route::get('/thanh-toan/phuc-khao/vnpay/return', [SvPhucKhaoController::class, 'vnpayReturn'])->name('sinhvien.phuc-khao.thanhtoan.vnpay.return');
 
 /*
 |--------------------------------------------------------------------------
@@ -161,7 +157,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('chung-nhan/{chungnhan}', [AdminChungNhanController::class, 'show'])->name('chungnhan.show');
     Route::post('chung-nhan/{chungnhan}/tiep-nhan', [AdminChungNhanController::class, 'tiepNhan'])->name('chungnhan.tiep-nhan');
     Route::post('chung-nhan/{chungnhan}/cap', [AdminChungNhanController::class, 'capNhan'])->name('chungnhan.cap');
-    Route::post('chung-nhan/{chungnhan}/tu-choi', [AdminChungNhanController::class, 'tuChoi'])->name('chungnhan.tuchoi');
+    Route::post('chung-nhan/{chungnhan}/tu-choi', [AdminChungNhanController::class, 'tuChoi'])->name('chungnhan.tu-choi');
+    Route::post('chung-nhan/{chungnhan}/tuchoi', [AdminChungNhanController::class, 'tuChoi'])->name('chungnhan.tuchoi');
 
     // M10: Thống kê & Báo cáo tổng hợp
     Route::get('thong-ke', [\App\Http\Controllers\Admin\ThongKeController::class, 'index'])->name('thongke.index');
@@ -206,6 +203,7 @@ Route::middleware(['auth', 'role:giangvien'])->prefix('giang-vien')->name('giang
     Route::get('/phuc-khao', [GvPhucKhaoController::class, 'index'])->name('phuc-khao.index');
     Route::get('/phuc-khao/{phuckhao}', [GvPhucKhaoController::class, 'show'])->name('phuc-khao.show');
     Route::post('/phuc-khao/{phuckhao}', [GvPhucKhaoController::class, 'xuLy'])->name('phuc-khao.xuly');
+    Route::post('/phuc-khao/{phuckhao}/xu-ly', [GvPhucKhaoController::class, 'xuLy'])->name('phuc-khao.xu-ly');
 });
 
 /*
@@ -243,12 +241,16 @@ Route::middleware(['auth', 'role:sinhvien'])->prefix('sinh-vien')->name('sinhvie
     Route::get('/ket-qua', [SvKetQuaController::class, 'index'])->name('ketqua.index');
     Route::get('/ket-qua/{baithi}', [SvKetQuaController::class, 'show'])->name('ketqua.show');
 
-    // M8
+    // M8: Phúc khảo
     Route::get('/phuc-khao', [SvPhucKhaoController::class, 'index'])->name('phuc-khao.index');
     Route::get('/phuc-khao/{baithi}/tao', [SvPhucKhaoController::class, 'create'])->name('phuc-khao.create');
     Route::post('/phuc-khao/{baithi}', [SvPhucKhaoController::class, 'store'])->name('phuc-khao.store');
+    Route::get('/phuc-khao/thanh-toan/{phuckhao}', [SvPhucKhaoController::class, 'thanhToan'])->name('phuc-khao.thanh-toan');
+    Route::post('/phuc-khao/thanh-toan/{phuckhao}', [SvPhucKhaoController::class, 'khoiTaoThanhToan'])->name('phuc-khao.thanh-toan.khoitao');
+    Route::get('/phuc-khao/thanh-toan/{phuckhao}/mo-phong', [SvPhucKhaoController::class, 'moPhongThanhToan'])->name('phuc-khao.thanh-toan.mophong');
+    Route::post('/phuc-khao/thanh-toan/{phuckhao}/mo-phong', [SvPhucKhaoController::class, 'xuLyMoPhongThanhToan'])->name('phuc-khao.thanh-toan.mophong.xuly');
 
-    // M9
+    // M9: Chứng nhận
     Route::get('/chung-nhan', [SvChungNhanController::class, 'index'])->name('chung-nhan.index');
     Route::get('/chung-nhan/{baithi}/xem', [SvChungNhanController::class, 'show'])->name('chung-nhan.show');
     Route::get('/chung-nhan/{baithi}/tao', [SvChungNhanController::class, 'create'])->name('chung-nhan.create');

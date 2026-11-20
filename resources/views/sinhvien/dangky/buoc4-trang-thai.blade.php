@@ -54,7 +54,7 @@
                 </p>
                 @php
                     $lichThi = $dangky->lichThi;
-                    $coTheDangKyLai = $lichThi && !$lichThi->daHetHanDangKy() && $lichThi->trang_thai === 'dang_mo_dang_ky' && ($lichThi->dangKysDaDuyet()->count() < $lichThi->so_luong_toi_da);
+                    $coTheDangKyLai = $lichThi && !$lichThi->daHetHanDangKy() && $lichThi->trang_thai === 'dang_mo_dang_ky' && !$lichThi->daHetCho();
                 @endphp
                 @if ($coTheDangKyLai)
                     <p class="mb-3 text-success fw-semibold">

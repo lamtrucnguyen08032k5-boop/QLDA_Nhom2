@@ -26,7 +26,7 @@ class KetQuaController extends Controller
                 ->where('trang_thai', 'da_cong_bo')
                 ->count();
 
-            $query = BaiThi::with(['dangKy.lichThi.khoa', 'deThi'])
+            $query = BaiThi::with(['dangKy.lichThi.khoa', 'deThi', 'phucKhaos'])
                 ->whereHas('dangKy', fn ($q) => $q->where('sinh_vien_id', $studentId))
                 ->where('trang_thai', 'da_cong_bo');
 

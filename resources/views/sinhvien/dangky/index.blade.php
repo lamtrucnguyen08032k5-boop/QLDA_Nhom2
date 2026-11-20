@@ -17,11 +17,16 @@
                 <div class="card-body d-flex flex-column">
                     <h6 class="fw-bold">{{ $lt->ten_ky_thi }}</h6>
                     <p class="small text-muted mb-1">📅 Ngày thi: {{ $lt->ngay_thi->format('d/m/Y') }} · Phòng {{ $lt->phong_thi }}</p>
-                    <p class="small text-muted mb-2">⏰ Hạn đăng ký: {{ $lt->han_dang_ky->format('d/m/Y H:i') }}</p>
+                    <p class="small text-muted mb-1">⏰ Hạn đăng ký: {{ $lt->han_dang_ky->format('d/m/Y H:i') }}</p>
+                    <p class="small mb-2 {{ $lt->so_cho_con_lai > 0 ? 'text-success fw-semibold' : 'text-danger fw-bold' }}">
+                        👥 Còn chỗ: {{ $lt->so_cho_con_lai }} / {{ $lt->so_luong_toi_da }}
+                    </p>
                     <p class="fw-bold mb-3" style="color:var(--hvnh-orange)">{{ number_format($lt->le_phi) }}đ</p>
                     <div class="mt-auto">
                         @if (in_array($lt->id, $daDangKyIds))
                             <span class="badge badge-cho-duyet w-100 py-2">Đã đăng ký</span>
+                        @elseif ($lt->daHetCho())
+                            <button class="btn btn-secondary w-100" disabled>Hết chỗ</button>
                         @else
                             <a href="{{ route('sinhvien.dangky.buoc1', $lt) }}" class="btn btn-primary w-100">Đăng ký dự thi</a>
                         @endif

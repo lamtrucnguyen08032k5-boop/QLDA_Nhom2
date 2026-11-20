@@ -76,7 +76,11 @@ class ChamThiController extends Controller
         $isNotMyTurn = !$isTurnGV1 && !$isTurnGV2;
         $isReadOnly = $baithi->da_khoa || ($baithi->trang_thai === 'da_chot') || $isNotMyTurn;
 
-        return view('giangvien.cham-thi.show', compact('baithi', 'isGV1', 'isGV2', 'isTurnGV1', 'isTurnGV2', 'isReadOnly', 'isNotMyTurn'));
+        $tongDiemToiDaTuLuan = $baithi->tong_diem_toi_da_tu_luan;
+
+        return view('giangvien.cham-thi.show', compact(
+            'baithi', 'isGV1', 'isGV2', 'isTurnGV1', 'isTurnGV2', 'isReadOnly', 'isNotMyTurn', 'tongDiemToiDaTuLuan'
+        ));
     }
 
     public function luuDiem(Request $request, BaiThi $baithi)
@@ -99,21 +103,25 @@ class ChamThiController extends Controller
             return redirect()->back()->withErrors(['msg' => 'Chưa tới lượt chấm của bạn hoặc bài thi đang ở trạng thái không cho phép chỉnh sửa.']);
         }
 
+        $tongDiemToiDaTuLuan = $baithi->tong_diem_toi_da_tu_luan;
+
+        $data = $request->validate([
+            'diem_tu_luan' => 'required|numeric|min:0|max:' . $tongDiemToiDaTuLuan,
+            'nhan_xet_1' => 'nullable|string',
+            'nhan_xet_2' => 'nullable|string',
+        ], [
+            'diem_tu_luan.required' => 'Vui lòng nhập tổng điểm phần tự luận.',
+            'diem_tu_luan.numeric' => 'Điểm tự luận phải là chữ số hợp lệ.',
+            'diem_tu_luan.min' => 'Điểm tự luận không được nhỏ hơn 0.',
+            'diem_tu_luan.max' => "Điểm tự luận không được vượt quá {$tongDiemToiDaTuLuan} điểm.",
+        ]);
+
+        $diemTuLuan = (float) $data['diem_tu_luan'];
+
         if ($isTurnGV1) {
-            $data = $request->validate([
-                'diem.*' => 'nullable|numeric|min:0',
-                'nhan_xet_1' => 'nullable|string',
-            ]);
-
-            foreach ($data['diem'] ?? [] as $cauTraLoiId => $diem) {
-                $ctl = CauTraLoi::where('bai_thi_id', $baithi->id)->findOrFail($cauTraLoiId);
-                $diemToiDa = $ctl->cauHoi->diem;
-                $diemCapped = min((float) $diem, (float) $diemToiDa);
-                $ctl->update(['diem_gv1' => $diemCapped]);
-            }
-
             $newTrangThai = ($action === 'gui') ? 'cho_cham_2' : 'dang_cham_1';
             $baithi->update([
+                'diem_tu_luan_gv1' => $diemTuLuan,
                 'nhan_xet_1' => $request->input('nhan_xet_1'),
                 'ngay_cham_1' => ($action === 'gui') ? now() : $baithi->ngay_cham_1,
                 'trang_thai' => $newTrangThai,
@@ -124,20 +132,9 @@ class ChamThiController extends Controller
         }
 
         if ($isTurnGV2) {
-            $data = $request->validate([
-                'diem.*' => 'nullable|numeric|min:0',
-                'nhan_xet_2' => 'nullable|string',
-            ]);
-
-            foreach ($data['diem'] ?? [] as $cauTraLoiId => $diem) {
-                $ctl = CauTraLoi::where('bai_thi_id', $baithi->id)->findOrFail($cauTraLoiId);
-                $diemToiDa = $ctl->cauHoi->diem;
-                $diemCapped = min((float) $diem, (float) $diemToiDa);
-                $ctl->update(['diem_gv2' => $diemCapped]);
-            }
-
             if ($action === 'nhap') {
                 $baithi->update([
+                    'diem_tu_luan_gv2' => $diemTuLuan,
                     'nhan_xet_2' => $request->input('nhan_xet_2'),
                     'trang_thai' => 'dang_cham_2',
                 ]);
@@ -146,6 +143,7 @@ class ChamThiController extends Controller
 
             // GV2 Gửi kết quả -> HĐ20: Đối chiếu & Phân nhánh
             $baithi->update([
+                'diem_tu_luan_gv2' => $diemTuLuan,
                 'nhan_xet_2' => $request->input('nhan_xet_2'),
                 'ngay_cham_2' => now(),
             ]);
@@ -161,22 +159,20 @@ class ChamThiController extends Controller
      */
     private function xuLyPhanNhanhHD20(BaiThi $baithi)
     {
-        $cauTuLuans = $baithi->cauTraLois()->whereHas('cauHoi', function ($q) {
-            $q->whereIn('loai_cau', ['tu_luan', 'tuluan']);
-        })->get();
+        $diemGV1 = (float) ($baithi->diem_tu_luan_gv1 ?? 0);
+        $diemGV2 = (float) ($baithi->diem_tu_luan_gv2 ?? 0);
 
-        // Kiểm tra xem 2 giảng viên có điểm trùng khớp hoàn toàn trên từng câu hay không
-        $isThongNhat = $this->kiemTraThongNhat($cauTuLuans);
+        // Kiểm tra xem 2 giảng viên có điểm trùng khớp hoàn toàn hay không
+        $isThongNhat = (abs($diemGV1 - $diemGV2) < 0.001);
 
         if ($isThongNhat) {
-            // Đồng nhất hoàn toàn (không có chênh lệch ở bất kỳ câu nào) -> Tự động chốt điểm bài thi
-            $tongGV1 = (float) $cauTuLuans->sum('diem_gv1');
+            // Đồng nhất hoàn toàn -> Tự động chốt điểm bài thi
+            $diemChotTuLuan = $diemGV2;
+            $diemTong = (float) $baithi->diem_tu_dong + $diemChotTuLuan;
 
-            DB::transaction(function () use ($baithi, $tongGV1, $cauTuLuans) {
-                $diemChotTuLuan = $tongGV1;
-                $diemTong = (float) $baithi->diem_tu_dong + $diemChotTuLuan;
-
+            DB::transaction(function () use ($baithi, $diemChotTuLuan, $diemTong) {
                 $baithi->update([
+                    'diem_cham_tay' => $diemChotTuLuan,
                     'diem_chot' => $diemChotTuLuan,
                     'diem_tong' => $diemTong,
                     'cham_xong' => true,
@@ -185,18 +181,18 @@ class ChamThiController extends Controller
                     'ngay_cham' => now(),
                 ]);
 
-                foreach ($cauTuLuans as $ctl) {
-                    $ctl->update([
-                        'diem_dat' => $ctl->diem_gv2 ?? $ctl->diem_gv1 ?? 0,
-                        'da_cham' => true,
-                    ]);
-                }
+                // Đánh dấu các câu trả lời tự luận
+                $cauTuLuans = $baithi->cauTraLois()->whereHas('cauHoi', function ($q) {
+                    $q->whereIn('loai_cau', ['tu_luan', 'tuluan']);
+                })->get();
+
+                $this->phanBoDiemTuLuan($cauTuLuans, $diemChotTuLuan);
             });
 
             return redirect()->route('giangvien.cham-thi.index')
                 ->with('status', 'Kết quả chấm của 2 Giảng viên hoàn toàn đồng nhất. Hệ thống đã tự động tổng hợp và chốt điểm bài thi.');
         } else {
-            // Có chênh lệch điểm ở ít nhất 1 câu giữa GV1 và GV2 -> Chuyển sang trạng thái Chờ thống nhất
+            // Có chênh lệch điểm giữa GV1 và GV2 -> Chuyển sang trạng thái Chờ thống nhất
             $baithi->update([
                 'trang_thai' => 'cho_thong_nhat',
             ]);
@@ -207,97 +203,99 @@ class ChamThiController extends Controller
     }
 
     /**
-     * Kiểm tra thống nhất: Chỉ khi điểm GV1 và GV2 trên tất cả các câu tự luận trùng khớp hoàn toàn mới coi là đồng nhất
+     * Phân bổ điểm tự luận cho các câu trả lời để hoàn thiện dữ liệu chi tiết
      */
-    private function kiemTraThongNhat($cauTuLuans): bool
+    private function phanBoDiemTuLuan($cauTuLuans, float $tongDiemDat): void
     {
         if ($cauTuLuans->isEmpty()) {
-            return true;
+            return;
         }
 
-        foreach ($cauTuLuans as $ctl) {
-            $diem1 = (float) ($ctl->diem_gv1 ?? 0);
-            $diem2 = (float) ($ctl->diem_gv2 ?? 0);
-            if (abs($diem1 - $diem2) >= 0.001) {
-                return false; // Có chênh lệch ở ít nhất một câu tự luận
+        $tongDiemToiDa = (float) $cauTuLuans->sum(fn($ctl) => $ctl->cauHoi?->diem ?? 0);
+
+        if ($tongDiemToiDa <= 0) {
+            foreach ($cauTuLuans as $ctl) {
+                $ctl->update(['da_cham' => true, 'diem_dat' => 0]);
             }
+            return;
         }
 
-        return true; // Đồng nhất hoàn toàn
-    }
-
-    /**
-     * Helper tính điểm chốt tự luận cho Nhánh A (PC-02)
-     */
-    private function tinhDiemChotNhanhA(float $tongGV1, float $tongGV2): float
-    {
-        $congThuc = config('exam.cong_thuc_nhanh_a', null);
-        if ($congThuc === 'trung_binh') {
-            return ($tongGV1 + $tongGV2) / 2;
-        } elseif ($congThuc === 'gv1') {
-            return $tongGV1;
-        } elseif ($congThuc === 'gv2') {
-            return $tongGV2;
+        if ($cauTuLuans->count() === 1) {
+            $ctl = $cauTuLuans->first();
+            $ctl->update([
+                'diem_dat' => min($tongDiemDat, (float)($ctl->cauHoi?->diem ?? $tongDiemDat)),
+                'da_cham' => true,
+            ]);
+            return;
         }
 
-        return (float) config('exam.dev_fallback_diem_chot_nhanh_a', $tongGV1);
+        $tyLe = $tongDiemDat / $tongDiemToiDa;
+        foreach ($cauTuLuans as $ctl) {
+            $diemCau = round((float)($ctl->cauHoi?->diem ?? 0) * $tyLe, 2);
+            $ctl->update([
+                'diem_dat' => $diemCau,
+                'da_cham' => true,
+            ]);
+        }
     }
 
-    /**
-     * Trang trao đổi & nhập điểm thống nhất
-     */
     public function thongNhat(BaiThi $baithi)
     {
         $user = Auth::user();
         $this->authorizeGiangVienForBaiThi($baithi, $user);
 
-        $baithi->load(['cauTraLois.cauHoi', 'dangKy.sinhVien', 'giangVien1', 'giangVien2']);
-
-        $isGV1 = ($baithi->giang_vien_1_id === $user->id);
-        $isGV2 = ($baithi->giang_vien_2_id === $user->id);
-
-        $hasDiemThongNhat = $baithi->cauTraLois->filter(function ($ctl) {
-            return in_array($ctl->cauHoi->loai_cau ?? '', ['tu_luan', 'tuluan']);
-        })->every(function ($ctl) {
-            return $ctl->diem_dat !== null;
-        });
-
-        return view('giangvien.cham-thi.thong-nhat', compact('baithi', 'isGV1', 'isGV2', 'hasDiemThongNhat'));
-    }
-
-    /**
-     * GV2 nhập điểm thống nhất hoặc GV1 xác nhận
-     */
-    public function luuThongNhat(Request $request, BaiThi $baithi)
-    {
-        $user = Auth::user();
-        $this->authorizeGiangVienForBaiThi($baithi, $user);
-
-        if ($baithi->trang_thai !== 'cho_thong_nhat') {
-            return redirect()->back()->withErrors(['msg' => 'Bài thi không ở trạng thái chờ thống nhất.']);
+        if ($baithi->trang_thai !== 'cho_thong_nhat' && !$baithi->da_khoa) {
+            return redirect()->route('giangvien.cham-thi.show', $baithi->id);
         }
 
-        $isGV1 = ($baithi->giang_vien_1_id === $user->id);
-        $isGV2 = ($baithi->giang_vien_2_id === $user->id);
-        $action = $request->input('action');
+        $baithi->load(['cauTraLois.cauHoi', 'dangKy.sinhVien', 'giangVien1', 'giangVien2']);
 
         $cauTuLuans = $baithi->cauTraLois()->whereHas('cauHoi', function ($q) {
             $q->whereIn('loai_cau', ['tu_luan', 'tuluan']);
         })->get();
 
-        $hasDiemTN = $cauTuLuans->isNotEmpty() && $cauTuLuans->every(fn($ctl) => $ctl->diem_dat !== null);
+        $isGV1 = ($baithi->giang_vien_1_id === $user->id);
+        $isGV2 = ($baithi->giang_vien_2_id === $user->id);
+        $isReadOnly = $baithi->da_khoa || ($baithi->trang_thai === 'da_chot');
+
+        $tongDiemToiDaTuLuan = $baithi->tong_diem_toi_da_tu_luan;
+
+        // GV1 chỉ xác nhận nếu GV2 đã lưu điểm thống nhất
+        $canConfirmGV1 = $isGV1 && !$isReadOnly && (
+            $baithi->diem_chot !== null || !empty($baithi->ly_do_thong_nhat)
+        );
+
+        return view('giangvien.cham-thi.thong-nhat', compact(
+            'baithi', 'cauTuLuans', 'isGV1', 'isGV2', 'isReadOnly', 'canConfirmGV1', 'tongDiemToiDaTuLuan'
+        ));
+    }
+
+    public function luuThongNhat(Request $request, BaiThi $baithi)
+    {
+        $user = Auth::user();
+        $this->authorizeGiangVienForBaiThi($baithi, $user);
+
+        if ($baithi->da_khoa || $baithi->trang_thai === 'da_chot') {
+            return redirect()->back()->withErrors(['msg' => 'Bài thi đã chốt điểm, không thể chỉnh sửa.']);
+        }
+
+        $isGV1 = ($baithi->giang_vien_1_id === $user->id);
+        $isGV2 = ($baithi->giang_vien_2_id === $user->id);
+        $action = $request->input('action');
+        $tongDiemToiDaTuLuan = $baithi->tong_diem_toi_da_tu_luan;
 
         // 1. Nếu GV1 gửi yêu cầu xác nhận kết quả chốt điểm
         if ($action === 'xac_nhan' && $isGV1) {
-            if (!$hasDiemTN && empty($baithi->ly_do_thong_nhat)) {
+            if ($baithi->diem_chot === null && empty($baithi->ly_do_thong_nhat)) {
                 return redirect()->back()->withErrors(['msg' => 'Chưa có kết quả thống nhất điểm từ GV2. Không thể xác nhận.']);
             }
 
-            $diemTuLuanThongNhat = (float) $cauTuLuans->sum('diem_dat');
+            $diemTuLuanThongNhat = (float) ($baithi->diem_chot ?? $baithi->diem_tu_luan_gv2 ?? 0);
             $diemTong = (float) $baithi->diem_tu_dong + $diemTuLuanThongNhat;
 
-            DB::transaction(function () use ($baithi, $diemTuLuanThongNhat, $diemTong, $cauTuLuans) {
+            DB::transaction(function () use ($baithi, $diemTuLuanThongNhat, $diemTong) {
                 $baithi->update([
+                    'diem_cham_tay' => $diemTuLuanThongNhat,
                     'diem_chot' => $diemTuLuanThongNhat,
                     'diem_tong' => $diemTong,
                     'cham_xong' => true,
@@ -307,9 +305,10 @@ class ChamThiController extends Controller
                     'ly_do_thong_nhat' => $baithi->ly_do_thong_nhat ?: 'Đã thống nhất điểm',
                 ]);
 
-                foreach ($cauTuLuans as $ctl) {
-                    $ctl->update(['da_cham' => true]);
-                }
+                $cauTuLuans = $baithi->cauTraLois()->whereHas('cauHoi', function ($q) {
+                    $q->whereIn('loai_cau', ['tu_luan', 'tuluan']);
+                })->get();
+                $this->phanBoDiemTuLuan($cauTuLuans, $diemTuLuanThongNhat);
             });
 
             return redirect()->route('giangvien.cham-thi.index')
@@ -319,18 +318,19 @@ class ChamThiController extends Controller
         // 2. Nếu GV2 lưu điểm thống nhất & ghi chú
         if ($isGV2) {
             $data = $request->validate([
-                'diem_thong_nhat.*' => 'required|numeric|min:0',
+                'diem_tu_luan_thong_nhat' => 'required|numeric|min:0|max:' . $tongDiemToiDaTuLuan,
                 'ly_do_thong_nhat' => 'nullable|string',
+            ], [
+                'diem_tu_luan_thong_nhat.required' => 'Vui lòng nhập tổng điểm tự luận thống nhất.',
+                'diem_tu_luan_thong_nhat.numeric' => 'Điểm thống nhất phải là chữ số hợp lệ.',
+                'diem_tu_luan_thong_nhat.min' => 'Điểm thống nhất không được nhỏ hơn 0.',
+                'diem_tu_luan_thong_nhat.max' => "Điểm thống nhất không được vượt quá {$tongDiemToiDaTuLuan} điểm.",
             ]);
 
-            foreach ($data['diem_thong_nhat'] as $ctlId => $diemTN) {
-                $ctl = CauTraLoi::where('bai_thi_id', $baithi->id)->findOrFail($ctlId);
-                $diemToiDa = $ctl->cauHoi->diem;
-                $diemTNVal = min((float) $diemTN, (float) $diemToiDa);
-                $ctl->update(['diem_dat' => $diemTNVal]);
-            }
+            $diemTN = (float) $data['diem_tu_luan_thong_nhat'];
 
             $baithi->update([
+                'diem_chot' => $diemTN,
                 'ly_do_thong_nhat' => $request->input('ly_do_thong_nhat') ?: 'Đã thống nhất điểm',
             ]);
 

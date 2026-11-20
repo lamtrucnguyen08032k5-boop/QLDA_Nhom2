@@ -80,7 +80,7 @@
                         @if ($dk->trang_thai === 'da_huy')
                             @php
                                 $lichThi = $dk->lichThi;
-                                $coTheDangKyLai = $lichThi && !$lichThi->daHetHanDangKy() && $lichThi->trang_thai === 'dang_mo_dang_ky' && ($lichThi->dangKysDaDuyet()->count() < $lichThi->so_luong_toi_da);
+                                $coTheDangKyLai = $lichThi && !$lichThi->daHetHanDangKy() && $lichThi->trang_thai === 'dang_mo_dang_ky' && !$lichThi->daHetCho();
                             @endphp
                             @if ($coTheDangKyLai)
                                 <a href="{{ route('sinhvien.dangky.buoc1', $lichThi) }}" class="btn btn-sm btn-outline-primary ms-1">🔄 Đăng ký lại</a>

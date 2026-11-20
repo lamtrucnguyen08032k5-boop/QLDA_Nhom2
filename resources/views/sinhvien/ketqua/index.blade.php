@@ -87,7 +87,7 @@
                             <th class="text-center" style="width: 8%;">Điểm thi</th>
                             <th class="text-center" style="width: 10%;">Kết quả</th>
                             <th style="width: 12%;">Ngày công bố</th>
-                            <th class="text-end pe-3" style="width: 10%;">Thao tác</th>
+                            <th class="text-end pe-3" style="width: 14%;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -138,9 +138,24 @@
                                 </div>
                             </td>
                             <td class="text-end pe-3">
-                                <a href="{{ route('sinhvien.ketqua.show', $bt) }}" class="btn btn-sm btn-outline-primary text-nowrap">
-                                    Xem chi tiết
-                                </a>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('sinhvien.ketqua.show', $bt) }}" class="btn btn-outline-primary text-nowrap">
+                                        Xem chi tiết
+                                    </a>
+                                    @if ($bt->con_han_phuc_khao && !$bt->da_phuc_khao)
+                                        <a href="{{ route('sinhvien.phuc-khao.create', $bt) }}" 
+                                           class="btn btn-outline-warning text-nowrap"
+                                           title="Gửi yêu cầu phúc khảo cho bài thi này">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Phúc khảo
+                                        </a>
+                                    @elseif ($bt->phucKhaoHienTai)
+                                        <a href="{{ route('sinhvien.phuc-khao.index') }}" 
+                                           class="btn btn-outline-secondary text-nowrap"
+                                           title="Đã có yêu cầu phúc khảo">
+                                            <i class="bi bi-clock-history me-1"></i>Đang PK
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

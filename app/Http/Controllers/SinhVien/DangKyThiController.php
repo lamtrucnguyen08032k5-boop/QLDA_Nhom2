@@ -39,7 +39,7 @@ class DangKyThiController extends Controller
         if ($lichThi->daHetHanDangKy() || $lichThi->trang_thai !== 'dang_mo_dang_ky') {
             return 'Ca thi này đã đóng đăng ký.';
         }
-        if ($lichThi->dangKysDaDuyet()->count() >= $lichThi->so_luong_toi_da) {
+        if ($lichThi->daHetCho()) {
             return 'Ca thi đã đủ số lượng thí sinh tối đa.';
         }
         $daDangKy = DangKy::where('sinh_vien_id', Auth::id())

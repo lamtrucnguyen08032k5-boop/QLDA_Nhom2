@@ -22,7 +22,8 @@ class PhucKhaoController extends Controller
             ->get();
 
         $query = PhucKhao::with(['baiThi.dangKy.sinhVien', 'baiThi.deThi', 'giangVien'])
-            ->whereHas('baiThi.deThi', fn ($q) => $q->where('khoa_id', $khoaId));
+            ->whereHas('baiThi.deThi', fn ($q) => $q->where('khoa_id', $khoaId))
+            ->whereNotIn('trang_thai', [PhucKhao::TRANG_THAI_CHO_THANH_TOAN, PhucKhao::TRANG_THAI_CHO_TIEP_NHAN]);
 
         if ($request->filled('trang_thai')) {
             $query->where('trang_thai', $request->trang_thai);
@@ -53,6 +54,17 @@ class PhucKhaoController extends Controller
             ->where('khoa_id', $khoaId)
             ->where('active', true)
             ->firstOrFail();
+
+        // Kiểm tra tính khách quan: Giảng viên chấm phúc khảo không được là GV1 hoặc GV2 đã chấm bài thi trước đó
+        $baiThi = $phuckhao->baiThi;
+        if ($baiThi) {
+            $cacGvCu = array_filter([$baiThi->giang_vien_1_id, $baiThi->giang_vien_2_id, $baiThi->giang_vien_id]);
+            if (in_array($gv->id, $cacGvCu)) {
+                return redirect()->back()->withErrors([
+                    'msg' => 'Không thể phân công Giảng viên đã trực tiếp chấm bài thi này (GV1/GV2) làm cán bộ chấm phúc khảo nhằm đảm bảo tính khách quan.'
+                ]);
+            }
+        }
 
         // HĐ10-11: Khoa phân công GV -> trang_thai = 'dang_xu_ly'
         $phuckhao->update([

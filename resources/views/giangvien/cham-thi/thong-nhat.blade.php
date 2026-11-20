@@ -10,8 +10,8 @@
 <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
     <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
     <div>
-        <strong>Phát hiện chênh lệch điểm tự luận:</strong> Kết quả chấm tự luận của Giảng viên 1 và Giảng viên 2 có chênh lệch cần thống nhất.
-        Hai Giảng viên tiến hành trao đổi, Giảng viên 2 nhập điểm đã thống nhất và Giảng viên 1 bấm xác nhận để hoàn tất chốt điểm.
+        <strong>Phát hiện chênh lệch điểm tự luận:</strong> Kết quả chấm tự luận giữa Giảng viên 1 và Giảng viên 2 có chênh lệch cần thống nhất.
+        Hai Giảng viên tiến hành trao đổi, Giảng viên 2 nhập tổng điểm đã thống nhất và Giảng viên 1 bấm xác nhận để hoàn tất chốt điểm.
     </div>
 </div>
 
@@ -20,7 +20,7 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <p class="mb-1"><strong>Sinh viên:</strong> {{ $baithi->dangKy->sinhVien->name ?? 'N/A' }} ({{ $baithi->dangKy->sinhVien->ma_so ?? '' }})</p>
-                <p class="mb-0"><strong>Kỳ thi:</strong> {{ $baithi->dangKy->lichThi->ten_ky_thi ?? 'N/A' }}</p>
+                <p class="mb-0"><strong>Kỳ thi:</strong> {{ $baithi->dangKy->lichThi->ten_ky_thi ?? 'N/A' }} • <strong>Đề thi:</strong> {{ $baithi->deThi->ten_de ?? 'N/A' }}</p>
             </div>
             <div class="col-md-6 text-md-end">
                 <p class="mb-1"><strong>GV1 chấm:</strong> <span class="fw-bold text-primary">{{ $baithi->giangVien1->name ?? 'N/A' }}</span></p>
@@ -33,93 +33,106 @@
 <form method="POST" action="{{ route('giangvien.cham-thi.luu-thong-nhat', $baithi->id) }}">
     @csrf
 
+    {{-- BẢNG ĐỐI CHIẾU TỔNG ĐIỂM TỰ LUẬN GV1 VS GV2 --}}
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white py-3">
-            <h5 class="card-title fw-bold mb-0">Bảng so sánh kết quả tự luận & Nhập điểm thống nhất</h5>
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="card-title fw-bold mb-0">Đối chiếu tổng điểm tự luận &amp; Nhập điểm thống nhất</h5>
         </div>
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 50px;">#</th>
-                        <th>Nội dung câu hỏi</th>
-                        <th style="width: 120px;" class="text-center">GV1 Chấm</th>
-                        <th style="width: 120px;" class="text-center">GV2 Chấm</th>
-                        <th style="width: 160px;" class="text-center">Điểm Thống Nhất</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach ($baithi->cauTraLois as $ctl)
-                    @if(in_array($ctl->cauHoi->loai_cau, ['tu_luan', 'tuluan']))
-                        <tr>
-                            <td class="text-center fw-bold">{{ $loop->iteration }}</td>
-                            <td>
-                                <div class="fw-semibold text-dark">{!! nl2br(e($ctl->cauHoi->noi_dung)) !!}</div>
-                                <div class="border rounded p-2 bg-light mt-2 small">
-                                    <span class="text-muted fw-bold">Bài làm SV:</span> {{ $ctl->bai_lam_tu_luan ?: '(không trả lời)' }}
-                                </div>
-                            </td>
-                            <td class="text-center fw-bold text-primary fs-5">
-                                {{ $ctl->diem_gv1 ?? 0 }}
-                            </td>
-                            <td class="text-center fw-bold text-info fs-5">
-                                {{ $ctl->diem_gv2 ?? 0 }}
-                            </td>
-                            <td class="text-center">
-                                @if($isGV2)
-                                    {{-- GV2 nhập điểm đã thống nhất --}}
-                                    <input type="number" step="0.1" min="0" max="{{ $ctl->cauHoi->diem }}"
-                                           name="diem_thong_nhat[{{ $ctl->id }}]"
-                                           class="form-control text-center fw-bold border-success"
-                                           value="{{ old('diem_thong_nhat.'.$ctl->id, $ctl->diem_dat ?? $ctl->diem_gv2) }}" required>
-                                @else
-                                    {{-- GV1 hoặc người khác: Chỉ đọc --}}
-                                    <span class="fw-bold text-success fs-5">{{ $ctl->diem_dat ?? '—' }}</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @endif
-                @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center mb-4">
+                <div class="col-md-4">
+                    <div class="p-3 bg-primary-subtle rounded border border-primary text-center">
+                        <small class="text-primary fw-bold text-uppercase d-block mb-1">Điểm tự luận GV1 chấm</small>
+                        <span class="fs-2 fw-bold text-primary">{{ (float)$baithi->diem_tu_luan_gv1 }}</span>
+                        <span class="text-muted small">/ {{ $tongDiemToiDaTuLuan }} điểm</span>
+                    </div>
+                </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-light py-2 fw-semibold">Nhận xét GV1 & GV2</div>
-                <div class="card-body">
-                    <p class="mb-2"><strong>GV1 nhận xét:</strong> {{ $baithi->nhan_xet_1 ?: 'Không có' }}</p>
-                    <p class="mb-0"><strong>GV2 nhận xét:</strong> {{ $baithi->nhan_xet_2 ?: 'Không có' }}</p>
+                <div class="col-md-4">
+                    <div class="p-3 bg-info-subtle rounded border border-info text-center">
+                        <small class="text-info-emphasis fw-bold text-uppercase d-block mb-1">Điểm tự luận GV2 chấm</small>
+                        <span class="fs-2 fw-bold text-info">{{ (float)$baithi->diem_tu_luan_gv2 }}</span>
+                        <span class="text-muted small">/ {{ $tongDiemToiDaTuLuan }} điểm</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="p-3 bg-warning-subtle rounded border border-warning text-center">
+                        <small class="text-warning-emphasis fw-bold text-uppercase d-block mb-1">Độ lệch điểm chấm</small>
+                        <span class="fs-2 fw-bold text-danger">{{ abs((float)$baithi->diem_tu_luan_gv1 - (float)$baithi->diem_tu_luan_gv2) }}</span>
+                        <span class="text-muted small">điểm</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- KHU VỰC NHẬP ĐIỂM THỐNG NHẤT --}}
+            <div class="bg-light p-4 rounded-3 border mb-3">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-check2-circle text-success me-2"></i>Điểm tự luận sau khi hai GV thống nhất</h6>
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">Tổng điểm tự luận thống nhất <span class="text-danger">*</span></label>
+                        @if($isGV2)
+                            <div class="input-group input-group-lg">
+                                <input type="number" step="0.1" min="0" max="{{ $tongDiemToiDaTuLuan }}"
+                                       name="diem_tu_luan_thong_nhat"
+                                       class="form-control fw-bold fs-4 text-success border-success"
+                                       value="{{ old('diem_tu_luan_thong_nhat', $baithi->diem_chot ?? $baithi->diem_tu_luan_gv2) }}"
+                                       required>
+                                <span class="input-group-text bg-white fw-bold text-muted">/ {{ $tongDiemToiDaTuLuan }} điểm</span>
+                            </div>
+                            <small class="text-muted">GV2 nhập tổng điểm tự luận sau khi hai bên đã trao đổi thống nhất.</small>
+                        @else
+                            <div class="fs-3 fw-bold text-success">
+                                {{ $baithi->diem_chot !== null ? (float)$baithi->diem_chot . ' / ' . $tongDiemToiDaTuLuan . ' điểm' : '— (Chờ GV2 nhập)' }}
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="col-md-7">
+                        <label class="form-label fw-bold">Ghi chú &amp; Lý do thống nhất</label>
+                        @if($isGV2)
+                            <textarea name="ly_do_thong_nhat" class="form-control" rows="2" placeholder="Nhập lý do hoặc nội dung thống nhất điểm...">{{ old('ly_do_thong_nhat', $baithi->ly_do_thong_nhat) }}</textarea>
+                        @else
+                            <div class="p-2 bg-white rounded border text-muted">
+                                {{ $baithi->ly_do_thong_nhat ?: 'Chưa có ghi chú từ GV2.' }}
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-light py-2 fw-semibold">Lý do & Ghi chú thống nhất</div>
-                <div class="card-body">
-                    @if($isGV2)
-                        <textarea name="ly_do_thong_nhat" class="form-control" rows="3" placeholder="Nhập lý do thống nhất điểm (không bắt buộc)...">{{ old('ly_do_thong_nhat', $baithi->ly_do_thong_nhat) }}</textarea>
-                    @else
-                        <div class="p-3 bg-light rounded min-height-100">
-                            {{ $baithi->ly_do_thong_nhat ?: 'Chưa có ghi chú thống nhất từ GV2.' }}
+    {{-- BÀI LÀM TỰ LUẬN ĐỂ THAM KHẢO --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h6 class="fw-bold mb-0 text-muted"><i class="bi bi-eye me-1"></i>Xem lại bài làm tự luận của sinh viên</h6>
+        </div>
+        <div class="card-body">
+            @foreach ($baithi->cauTraLois as $ctl)
+                @if(in_array($ctl->cauHoi->loai_cau, ['tu_luan', 'tuluan']))
+                    <div class="mb-3 border-bottom pb-3">
+                        <p class="fw-bold text-dark mb-1">Câu hỏi (Tối đa {{ $ctl->cauHoi->diem }} điểm):</p>
+                        <p class="text-muted mb-2">{!! nl2br(e($ctl->cauHoi->noi_dung)) !!}</p>
+                        <div class="p-3 bg-light rounded border">
+                            <span class="text-muted small fw-bold d-block mb-1">Bài làm:</span>
+                            <div style="white-space: pre-wrap;">{{ $ctl->bai_lam_tu_luan ?: '(Không trả lời)' }}</div>
                         </div>
-                    @endif
-                </div>
-            </div>
+                    </div>
+                @endif
+            @endforeach
         </div>
     </div>
 
+    {{-- KHU VỰC THAO TÁC --}}
     <div class="card border-0 shadow-sm p-3 mb-5">
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 @if($isGV2)
-                    <span class="text-muted small d-block"><i class="bi bi-info-circle me-1"></i>GV2 nhập điểm đã thống nhất và nhấn "Lưu điểm thống nhất" để gửi GV1.</span>
+                    <span class="text-muted small d-block"><i class="bi bi-info-circle me-1"></i>GV2 nhập tổng điểm đã thống nhất và nhấn "Lưu điểm thống nhất" để gửi cho GV1 xác nhận.</span>
                 @endif
                 @if($isGV1)
-                    <span class="text-muted small d-block"><i class="bi bi-info-circle me-1"></i>GV1 kiểm tra kết quả thống nhất từ GV2 và bấm "GV1 Xác nhận kết quả" để chốt điểm chính thức.</span>
+                    <span class="text-muted small d-block"><i class="bi bi-info-circle me-1"></i>GV1 kiểm tra tổng điểm thống nhất từ GV2 và bấm "GV1 Xác nhận kết quả" để chốt bài thi chính thức.</span>
                 @endif
             </div>
 
@@ -131,7 +144,7 @@
                 @endif
 
                 @php
-                    $daCoKetQuaGV2 = ($hasDiemThongNhat ?? false) || !empty($baithi->ly_do_thong_nhat);
+                    $daCoKetQuaGV2 = ($baithi->diem_chot !== null) || !empty($baithi->ly_do_thong_nhat);
                 @endphp
 
                 @if($isGV1 && $daCoKetQuaGV2)
